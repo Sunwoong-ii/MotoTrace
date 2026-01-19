@@ -1,0 +1,43 @@
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+### Swift / Xcode ###
+build/
+DerivedData/
+*.moved-aside
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.xcloc
+*.pot
+*.snippets
+*.xcuserstate
+
+### Tuist (핵심 설정) ###
+# Tuist는 코드로 프로젝트를 생성하므로 아래 파일들은 절대 올리지 않습니다.
+*.xcodeproj
+*.xcworkspace
+Derived/
+graph.dot
+graph.png
+*.swp
+
+### Swift Package Manager ###
+# Tuist가 관리하는 의존성 관련 파일들
+.build/
+Tuist/.build/
+Tuist/Dependencies/
+
+### SwiftData & CoreData ###
+# 로컬 테스트 중 생기는 DB 파일들
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
