@@ -16,26 +16,11 @@ let project = Project(
             bundleId: bundleId,
             deploymentTargets: BuildSettings.deploymentTargets,
             infoPlist: .extendingDefault(
-                with: [
-                    "UILaunchScreen": [
-                        "UIColorName": "",
-                        "UIImageName": "",
-                    ],
-                ]
+                with: AppInfoPlist.base
             ),
             sources: ["Sources/**"],
             resources: ["Resources/**"],
-            dependencies: [
-                // Feature
-                .project(target: "FeatureRiding", path: .relativeToRoot("Modules/Feature/FeatureRiding")),
-                .project(target: "FeatureHistory", path: .relativeToRoot("Modules/Feature/FeatureHistory")),
-                .project(target: "FeatureSettings", path: .relativeToRoot("Modules/Feature/FeatureSettings")),
-                // Core
-                .project(target: "CoreDataStorage", path: .relativeToRoot("Modules/Core/CoreDataStorage")),
-                .project(target: "CoreTracking", path: .relativeToRoot("Modules/Core/CoreTracking")),
-                // Shared
-                .project(target: "Shared", path: .relativeToRoot("Modules/SharedModules/Shared"))
-            ]
+            dependencies: ModuleName.allDependencies
         ),
         .target(
             name: "\(appName)Tests",

@@ -2,8 +2,5 @@ import ProjectDescription
 import ProjectDescriptionHelpers
 
 let project = Project.makeFeature(
-    name: ModuleName.featureSettings,
-    interfaceDependencies: [
-        .coreDataStorageInterface
-    ]
+    name: ModuleName.featureSettings.rawValue
 )

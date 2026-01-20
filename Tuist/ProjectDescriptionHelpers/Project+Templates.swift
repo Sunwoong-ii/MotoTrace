@@ -1,15 +1,38 @@
 import ProjectDescription
 
 public extension Project {
+    static func makeSingleModule(
+        name: String,
+        dependencies: [TargetDependency] = []
+    ) -> Project {
+        Project(
+            name: name,
+            targets: [
+                .target(
+                    name: name,
+                    destinations: .iOS,
+                    product: .staticFramework,
+                    bundleId: "\(BuildSettings.bundleIdPrefix).\(name)",
+                    deploymentTargets: BuildSettings.deploymentTargets,
+                    sources: ["Sources/**"],
+                    dependencies: dependencies
+                )
+            ]
+        )
+    }
+
     static func makeModule(
         name: String,
         interfaceDependencies: [TargetDependency] = [],
         implementationDependencies: [TargetDependency] = []
     ) -> Project {
         let defaultImplementationDependencies: [TargetDependency] = [
-            .target(name: "\(name)Interface")
+            .target(name: "\(name)Interface"),
+            .makeDependency(name: .shared)
         ]
+        
         let resolvedImplementationDependencies = defaultImplementationDependencies + implementationDependencies
+        let interfaceDependencies = interfaceDependencies + [.makeDependency(name: .shared)]
 
         return Project(
             name: name,
@@ -35,17 +58,15 @@ public extension Project {
             ]
         )
     }
-    
+
     static func makeFeature(
         name: String,
         interfaceDependencies: [TargetDependency] = [],
         implementationDependencies: [TargetDependency] = []
     ) -> Project {
-        let featureInterfaceDependencies = interfaceDependencies + [.sharedInterface]
-        
         return makeModule(
             name: name,
-            interfaceDependencies: featureInterfaceDependencies,
+            interfaceDependencies: interfaceDependencies,
             implementationDependencies: implementationDependencies
         )
     }

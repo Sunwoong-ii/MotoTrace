@@ -1,6 +1,6 @@
 import ProjectDescription
 import ProjectDescriptionHelpers
 
-let project = Project.makeModule(
-    name: ModuleName.shared
+let project = Project.makeSingleModule(
+    name: ModuleName.shared.rawValue
 )
