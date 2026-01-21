@@ -18,14 +18,10 @@ internal final class TourStore: ObservableObject {
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
     
-    internal init(
-        state: RidingState = RidingState(),
-        sensors: CoreSensorsInterface = CoreSensorsFactory.create(),
-        analyzer: TrackingAnalyzerInterface = TrackingAnalyzerFactory.create()
-    ) {
-        self.state = state
-        self.sensors = sensors
-        self.analyzer = analyzer
+    internal init(dependencies: TourDependencies) {
+        self.state = dependencies.initialState
+        self.sensors = dependencies.sensors
+        self.analyzer = dependencies.analyzer
     }
     
     internal func send(_ intent: RidingIntent) {
@@ -38,7 +34,7 @@ internal final class TourStore: ObservableObject {
     }
 }
 
-private extension RidingStore {
+private extension TourStore {
     func startTracking() {
         guard locationTask == nil, motionTask == nil else { return }
         state.isRiding = true

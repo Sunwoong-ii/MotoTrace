@@ -1,5 +1,4 @@
 import Foundation
-import SharedInterface
 
 /// Shared 구현체 모듈
 public struct SharedModule {
