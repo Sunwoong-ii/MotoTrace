@@ -1,5 +1,5 @@
 import SwiftUI
-import FeatureRidingInterface
+import FeatureTourInterface
 
 /// 라이딩 Feature Builder
 public enum RidingFeatureBuilder: RidingFeatureBuilding {

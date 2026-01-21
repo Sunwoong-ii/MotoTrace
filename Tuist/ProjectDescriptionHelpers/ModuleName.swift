@@ -24,7 +24,7 @@ public enum ModuleName: String, CaseIterable {
     case coreSensors = "CoreSensors"
     
     // MARK: - Feature
-    case featureRiding = "FeatureRiding"
+    case featureTour = "FeatureTour"
     case featureHistory = "FeatureHistory"
     case featureSettings = "FeatureSettings"
     
@@ -36,7 +36,7 @@ public enum ModuleName: String, CaseIterable {
         case .coreTracking: .core
         case .coreSensors: .core
             
-        case .featureRiding: .feature
+        case .featureTour: .feature
         case .featureHistory: .feature
         case .featureSettings: .feature
         }

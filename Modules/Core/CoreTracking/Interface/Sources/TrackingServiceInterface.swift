@@ -93,10 +93,21 @@ public struct TrackingEvent: Codable {
     }
 }
 
+public struct TrackingEventLocation: Codable {
+    public let event: TrackingEvent
+    public let location: TrackingData?
+    
+    public init(event: TrackingEvent, location: TrackingData?) {
+        self.event = event
+        self.location = location
+    }
+}
+
 public protocol TrackingAnalyzerInterface {
     func updateSpeed(_ data: SpeedData) -> [TrackingEvent]
     func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent]
     func updateAttitude(_ data: AttitudeData) -> [TrackingEvent]
+    func mapEventsToLocations(_ events: [TrackingEvent]) -> [TrackingEventLocation]
     func recordLocation(_ data: TrackingData)
     func route() -> [TrackingData]
     func stats() -> TourStats
