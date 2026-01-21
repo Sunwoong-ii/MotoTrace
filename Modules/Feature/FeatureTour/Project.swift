@@ -3,7 +3,7 @@ import ProjectDescriptionHelpers
 
 let project = Project.makeFeature(
     name: ModuleName.featureTour.rawValue,
-    implementationDependencies: [
+    interfaceDependencies: [
         .makeInterfaceDependency(name: .coreSensors),
         .makeInterfaceDependency(name: .coreTracking)
     ]

@@ -27,12 +27,12 @@ public extension Project {
         implementationDependencies: [TargetDependency] = []
     ) -> Project {
         let defaultImplementationDependencies: [TargetDependency] = [
-            .target(name: "\(name)Interface"),
-            .makeDependency(name: .shared)
+            .target(name: "\(name)Interface")
         ]
-        
-        let resolvedImplementationDependencies = defaultImplementationDependencies + implementationDependencies
-        let interfaceDependencies = interfaceDependencies + [.makeDependency(name: .shared)]
+
+        let resolvedInterfaceDependencies = interfaceDependencies + [.makeDependency(name: .shared)]
+        let resolvedImplementationDependencies =
+            defaultImplementationDependencies + resolvedInterfaceDependencies + implementationDependencies
 
         return Project(
             name: name,
@@ -44,7 +44,7 @@ public extension Project {
                     bundleId: "\(BuildSettings.bundleIdPrefix).\(name)Interface",
                     deploymentTargets: BuildSettings.deploymentTargets,
                     sources: ["Interface/Sources/**"],
-                    dependencies: interfaceDependencies
+                    dependencies: resolvedInterfaceDependencies
                 ),
                 .target(
                     name: name,
