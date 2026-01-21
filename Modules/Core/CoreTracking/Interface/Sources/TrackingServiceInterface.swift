@@ -1,12 +1,18 @@
+//  TrackingServiceInterface.swift
+//  MotoTrace
+//
+//  Created by Woong on 2026/01/20.
+//
+
 import Foundation
-import CoreLocation  // Apple의 CoreLocation 프레임워크 사용
+import CoreLocation
 
 /// 위치 추적 서비스 프로토콜
 public protocol TrackingServiceInterface {
     // 위치 추적 메서드
 }
 
-public struct SpeedSample: Codable {
+public struct SpeedData: Codable {
     public let timestamp: Date
     public let speedKmh: Double
     
@@ -16,13 +22,25 @@ public struct SpeedSample: Codable {
     }
 }
 
-public struct LeanAngleSample: Codable {
+public struct LeanAngleData: Codable {
     public let timestamp: Date
     public let angleDegrees: Double
     
     public init(timestamp: Date, angleDegrees: Double) {
         self.timestamp = timestamp
         self.angleDegrees = angleDegrees
+    }
+}
+
+public struct AttitudeData: Codable {
+    public let timestamp: Date
+    public let rollDegrees: Double
+    public let pitchDegrees: Double
+    
+    public init(timestamp: Date, rollDegrees: Double, pitchDegrees: Double) {
+        self.timestamp = timestamp
+        self.rollDegrees = rollDegrees
+        self.pitchDegrees = pitchDegrees
     }
 }
 
@@ -76,13 +94,14 @@ public struct TrackingEvent: Codable {
 }
 
 public protocol TrackingAnalyzerInterface {
-    func updateSpeed(_ sample: SpeedSample) -> [TrackingEvent]
-    func updateLeanAngle(_ sample: LeanAngleSample) -> [TrackingEvent]
+    func updateSpeed(_ data: SpeedData) -> [TrackingEvent]
+    func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent]
+    func updateAttitude(_ data: AttitudeData) -> [TrackingEvent]
     func recordLocation(_ data: TrackingData)
     func route() -> [TrackingData]
     func stats() -> TourStats
     func setThresholds(_ thresholds: TrackingThresholds)
-    func calibrateLeanZero(angleDegrees: Double)
+    func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double)
     func reset()
 }
 
