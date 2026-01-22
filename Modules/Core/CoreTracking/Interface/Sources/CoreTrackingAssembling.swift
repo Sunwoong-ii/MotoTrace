@@ -10,7 +10,7 @@ import Foundation
 public struct CoreTrackingDependencies {
     public let thresholds: TrackingThresholds
     
-    public init(thresholds: TrackingThresholds) {
+    public init(thresholds: TrackingThresholds = TrackingPolicy.defaultThresholds) {
         self.thresholds = thresholds
     }
 }
