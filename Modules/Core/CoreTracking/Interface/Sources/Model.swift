@@ -1,16 +1,11 @@
-//  TrackingServiceInterface.swift
-//  MotoTrace
 //
-//  Created by Woong on 2026/01/20.
+//  Model.swift
+//  CoreTrackingInterface
+//
+//  Created by 웅 on 1/22/26.
 //
 
 import Foundation
-import CoreLocation
-
-/// 위치 추적 서비스 프로토콜
-public protocol TrackingServiceInterface {
-    // 위치 추적 메서드
-}
 
 public struct SpeedData: Codable {
     public let timestamp: Date
@@ -41,6 +36,16 @@ public struct AttitudeData: Codable {
         self.timestamp = timestamp
         self.rollDegrees = rollDegrees
         self.pitchDegrees = pitchDegrees
+    }
+}
+
+public struct AccelerationData: Codable {
+    public let timestamp: Date
+    public let accelerationG: Double
+    
+    public init(timestamp: Date, accelerationG: Double) {
+        self.timestamp = timestamp
+        self.accelerationG = accelerationG
     }
 }
 
@@ -93,6 +98,36 @@ public struct TrackingEvent: Codable {
     }
 }
 
+public enum SpeedChangeEventType: String, Codable {
+    case rapidAcceleration
+    case rapidDeceleration
+}
+
+public struct SpeedChangeEvent: Codable {
+    public let type: SpeedChangeEventType
+    public let startTimestamp: Date
+    public let endTimestamp: Date
+    public let startSpeedKmh: Double
+    public let endSpeedKmh: Double
+    public let durationSeconds: TimeInterval
+    
+    public init(
+        type: SpeedChangeEventType,
+        startTimestamp: Date,
+        endTimestamp: Date,
+        startSpeedKmh: Double,
+        endSpeedKmh: Double,
+        durationSeconds: TimeInterval
+    ) {
+        self.type = type
+        self.startTimestamp = startTimestamp
+        self.endTimestamp = endTimestamp
+        self.startSpeedKmh = startSpeedKmh
+        self.endSpeedKmh = endSpeedKmh
+        self.durationSeconds = durationSeconds
+    }
+}
+
 public struct TrackingEventLocation: Codable {
     public let event: TrackingEvent
     public let location: TrackingData?
@@ -103,19 +138,15 @@ public struct TrackingEventLocation: Codable {
     }
 }
 
-public protocol TrackingAnalyzerInterface {
-    func updateSpeed(_ data: SpeedData) -> [TrackingEvent]
-    func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent]
-    func updateAttitude(_ data: AttitudeData) -> [TrackingEvent]
-    func mapEventsToLocations(_ events: [TrackingEvent]) -> [TrackingEventLocation]
-    func recordLocation(_ data: TrackingData)
-    func route() -> [TrackingData]
-    func stats() -> TourStats
-    func setThresholds(_ thresholds: TrackingThresholds)
-    func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double)
-    func reset()
+public struct SpeedChangeEventLocation: Codable {
+    public let event: SpeedChangeEvent
+    public let location: TrackingData?
+    
+    public init(event: SpeedChangeEvent, location: TrackingData?) {
+        self.event = event
+        self.location = location
+    }
 }
-
 /// 추적 데이터 DTO
 public struct TrackingData: Codable {
     public let latitude: Double
