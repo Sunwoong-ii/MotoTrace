@@ -4,12 +4,14 @@ public enum ModuleType {
     case feature
     case core
     case shared
+    case di
     
     public var path: String {
         switch self {
         case .feature: "Modules/Feature/"
         case .core: "Modules/Core/"
         case .shared: "Modules/SharedModules/"
+        case .di: "Modules/DI/"
         }
     }
 }
@@ -23,6 +25,9 @@ public enum ModuleName: String, CaseIterable {
     case coreTracking = "CoreTracking"
     case coreSensors = "CoreSensors"
     
+    // MARK: - DI
+    case appDI = "AppDI"
+    
     // MARK: - Feature
     case featureTour = "FeatureTour"
     case featureHistory = "FeatureHistory"
@@ -35,6 +40,8 @@ public enum ModuleName: String, CaseIterable {
         case .coreDataStorage: .core
         case .coreTracking: .core
         case .coreSensors: .core
+            
+        case .appDI: .di
             
         case .featureTour: .feature
         case .featureHistory: .feature
