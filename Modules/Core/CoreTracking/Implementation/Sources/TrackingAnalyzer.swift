@@ -21,7 +21,7 @@ internal final class TrackingAnalyzer: TrackingAnalyzerInterface {
         self.leanAnalyzer = LeanAnalyzer(thresholds: thresholds)
     }
     
-    internal func updateSpeed(_ data: SpeedData) -> [TrackingEvent] {
+    internal func updateSpeed(_ data: SpeedData) -> [SpeedChangeEvent] {
         speedAnalyzer.updateSpeed(data)
     }
     
@@ -33,11 +33,24 @@ internal final class TrackingAnalyzer: TrackingAnalyzerInterface {
         leanAnalyzer.updateAttitude(data)
     }
 
+    internal func updateAcceleration(_ data: AccelerationData) {
+        speedAnalyzer.updateAcceleration(data)
+    }
+
     internal func mapEventsToLocations(_ events: [TrackingEvent]) -> [TrackingEventLocation] {
         events.map { event in
             TrackingEventLocation(
                 event: event,
                 location: closestLocation(to: event.timestamp)
+            )
+        }
+    }
+
+    internal func mapSpeedEventsToLocations(_ events: [SpeedChangeEvent]) -> [SpeedChangeEventLocation] {
+        events.map { event in
+            SpeedChangeEventLocation(
+                event: event,
+                location: closestLocation(to: event.startTimestamp)
             )
         }
     }

@@ -50,12 +50,6 @@ public extension Project {
 
         let demoTargets: [Target]
         if includeDemo {
-            let resolvedDemoDependencies = unique(
-                [.target(name: name)] +
-                interfaceDependencies +
-                implementationDependencies
-            )
-            
             demoTargets = [
                 .target(
                     name: "\(name)Demo",
@@ -65,7 +59,7 @@ public extension Project {
                     deploymentTargets: BuildSettings.deploymentTargets,
                     infoPlist: .extendingDefault(with: AppInfoPlist.base),
                     sources: ["Demo/Sources/**"],
-                    dependencies: resolvedDemoDependencies
+                    dependencies: [.target(name: name)]
                 )
             ]
         } else {

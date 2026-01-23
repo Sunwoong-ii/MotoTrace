@@ -55,13 +55,21 @@ private extension TourStore {
                 let events = analyzer.updateSpeed(
                     SpeedData(timestamp: location.timestamp, speedKmh: location.speedKmh)
                 )
-                _ = analyzer.mapEventsToLocations(events)
+                _ = analyzer.mapSpeedEventsToLocations(events)
             }
         }
         
         motionTask = Task { [weak self] in
             guard let self else { return }
             for await motion in sensors.motionStream() {
+                let accelerationG = sqrt(
+                    motion.userAccelerationX * motion.userAccelerationX +
+                    motion.userAccelerationY * motion.userAccelerationY +
+                    motion.userAccelerationZ * motion.userAccelerationZ
+                )
+                analyzer.updateAcceleration(
+                    AccelerationData(timestamp: motion.timestamp, accelerationG: accelerationG)
+                )
                 let events = analyzer.updateAttitude(
                     AttitudeData(
                         timestamp: motion.timestamp,

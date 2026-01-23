@@ -72,11 +72,15 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
             let roll = motion.attitude.roll * 180.0 / .pi
             let pitch = motion.attitude.pitch * 180.0 / .pi
             let yaw = motion.attitude.yaw * 180.0 / .pi
+            let acceleration = motion.userAcceleration
             self?.motionContinuation?.yield(
                 Motion(
                     rollDegrees: roll,
                     pitchDegrees: pitch,
                     yawDegrees: yaw,
+                    userAccelerationX: acceleration.x,
+                    userAccelerationY: acceleration.y,
+                    userAccelerationZ: acceleration.z,
                     timestamp: Date()
                 )
             )

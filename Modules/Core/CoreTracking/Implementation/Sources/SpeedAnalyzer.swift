@@ -92,8 +92,9 @@ internal final class SpeedAnalyzer {
             }
             
             if currentSpeedData.speedKmh >= thresholds.stopSpeedKmh {
+                let secondsPerHour = 3600.0
                 movingTimeSeconds += deltaTime
-                movingDistanceKm += (currentSpeedData.speedKmh * (deltaTime / 3600.0))
+                movingDistanceKm += (currentSpeedData.speedKmh * (deltaTime / secondsPerHour))
             }
         }
         
@@ -103,7 +104,8 @@ internal final class SpeedAnalyzer {
     internal func stats() -> TourStats {
         let averageSpeed: Double
         if movingTimeSeconds > 0 {
-            averageSpeed = movingDistanceKm / (movingTimeSeconds / 3600.0)
+            let secondsPerHour = 3600.0
+            averageSpeed = movingDistanceKm / (movingTimeSeconds / secondsPerHour)
         } else {
             averageSpeed = 0
         }
@@ -119,7 +121,12 @@ internal final class SpeedAnalyzer {
     }
 
     internal func updateAcceleration(_ data: AccelerationData) {
-        let accelerationKmhPerSec = data.accelerationG * 9.81 * 3.6
+        let gravityMetersPerSecondSquared = 9.81
+        let metersPerSecondToKmh = 3.6
+        let accelerationKmhPerSec =
+            data.accelerationG *
+            gravityMetersPerSecondSquared *
+            metersPerSecondToKmh
         lastMotionTrigger = MotionTrigger(
             timestamp: data.timestamp,
             accelerationKmhPerSec: accelerationKmhPerSec
@@ -137,7 +144,8 @@ internal final class SpeedAnalyzer {
     func isMotionTriggerActive(at timestamp: Date) -> Bool {
         guard let trigger = lastMotionTrigger else { return false }
         let delta = abs(trigger.timestamp.timeIntervalSince(timestamp))
-        if delta > 0.6 {
+        let motionTriggerWindowSeconds: TimeInterval = 0.6
+        if delta > motionTriggerWindowSeconds {
             return false
         }
         return abs(trigger.accelerationKmhPerSec) >= thresholds.accelerationKmhPerSec

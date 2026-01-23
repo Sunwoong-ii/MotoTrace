@@ -3,6 +3,7 @@
 //
 //  Created by Woong on 2026/01/20.
 //
+
 import Foundation
 import CoreLocation
 
@@ -32,12 +33,26 @@ public struct Motion: Codable {
     public let rollDegrees: Double
     public let pitchDegrees: Double
     public let yawDegrees: Double
+    public let userAccelerationX: Double
+    public let userAccelerationY: Double
+    public let userAccelerationZ: Double
     public let timestamp: Date
     
-    public init(rollDegrees: Double, pitchDegrees: Double, yawDegrees: Double, timestamp: Date) {
+    public init(
+        rollDegrees: Double,
+        pitchDegrees: Double,
+        yawDegrees: Double,
+        userAccelerationX: Double,
+        userAccelerationY: Double,
+        userAccelerationZ: Double,
+        timestamp: Date
+    ) {
         self.rollDegrees = rollDegrees
         self.pitchDegrees = pitchDegrees
         self.yawDegrees = yawDegrees
+        self.userAccelerationX = userAccelerationX
+        self.userAccelerationY = userAccelerationY
+        self.userAccelerationZ = userAccelerationZ
         self.timestamp = timestamp
     }
 }

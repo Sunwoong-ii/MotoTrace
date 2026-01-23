@@ -63,17 +63,21 @@ internal struct TourView: View {
 
 private extension TourView {
     func zoomIn() {
+        let minSpan = 0.001
+        let zoomInFactor = 0.6
         region.span = MKCoordinateSpan(
-            latitudeDelta: max(region.span.latitudeDelta * 0.6, 0.001),
-            longitudeDelta: max(region.span.longitudeDelta * 0.6, 0.001)
+            latitudeDelta: max(region.span.latitudeDelta * zoomInFactor, minSpan),
+            longitudeDelta: max(region.span.longitudeDelta * zoomInFactor, minSpan)
         )
         cameraPosition = .region(region)
     }
     
     func zoomOut() {
+        let maxSpan = 10.0
+        let zoomOutFactor = 1.6
         region.span = MKCoordinateSpan(
-            latitudeDelta: min(region.span.latitudeDelta * 1.6, 10.0),
-            longitudeDelta: min(region.span.longitudeDelta * 1.6, 10.0)
+            latitudeDelta: min(region.span.latitudeDelta * zoomOutFactor, maxSpan),
+            longitudeDelta: min(region.span.longitudeDelta * zoomOutFactor, maxSpan)
         )
         cameraPosition = .region(region)
     }

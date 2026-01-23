@@ -31,11 +31,15 @@ private final class PreviewSensors: CoreSensorsInterface {
 }
 
 private final class PreviewAnalyzer: TrackingAnalyzerInterface {
-    func updateSpeed(_ data: SpeedData) -> [TrackingEvent] { [] }
+    func updateSpeed(_ data: SpeedData) -> [SpeedChangeEvent] { [] }
     func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent] { [] }
     func updateAttitude(_ data: AttitudeData) -> [TrackingEvent] { [] }
+    func updateAcceleration(_ data: AccelerationData) {}
     func mapEventsToLocations(_ events: [TrackingEvent]) -> [TrackingEventLocation] {
         events.map { TrackingEventLocation(event: $0, location: nil) }
+    }
+    func mapSpeedEventsToLocations(_ events: [SpeedChangeEvent]) -> [SpeedChangeEventLocation] {
+        events.map { SpeedChangeEventLocation(event: $0, location: nil) }
     }
     func recordLocation(_ data: TrackingData) {}
     func route() -> [TrackingData] { [] }
