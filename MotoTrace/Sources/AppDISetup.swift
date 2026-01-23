@@ -10,18 +10,35 @@ import CoreSensors
 import CoreTracking
 import CoreDataStorage
 import Foundation
+import SwiftData
 
 /// Production 환경 DI 조립
 enum AppDISetup {
-    static func production() -> AppDIContainer {
+    static func production() -> (container: AppDIContainer, modelContainer: ModelContainer) {
         let container = AppDIContainer()
+        
+        // SwiftData ModelContainer 생성
+        let schema = Schema([
+            TourRecord.self,
+            RoutePoint.self,
+            TourEvent.self
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        guard let modelContainer = try? ModelContainer(for: schema, configurations: [modelConfiguration]) else {
+            fatalError("Failed to create ModelContainer")
+        }
+        
+        // ModelContainer를 DI에 등록
+        container.register(ModelContainer.self, scope: .singleton) {
+            modelContainer
+        }
         
         // 각 모듈의 Assembly를 통해 의존성 등록
         CoreSensorsAssembly.register(in: container)
         CoreTrackingAssembly.register(in: container)
         CoreDataStorageAssembly.register(in: container)
         
-        return container
+        return (container, modelContainer)
     }
 }
 
