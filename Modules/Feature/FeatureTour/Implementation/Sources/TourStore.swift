@@ -18,10 +18,14 @@ internal final class TourStore: ObservableObject {
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
     
-    internal init(dependencies: TourDependencies) {
-        self.state = dependencies.initialState
-        self.sensors = dependencies.sensors
-        self.analyzer = dependencies.analyzer
+    internal init(
+        sensors: CoreSensorsInterface,
+        analyzer: TrackingAnalyzerInterface,
+        initialState: RidingState = RidingState()
+    ) {
+        self.sensors = sensors
+        self.analyzer = analyzer
+        self.state = initialState
     }
     
     internal func send(_ intent: RidingIntent) {

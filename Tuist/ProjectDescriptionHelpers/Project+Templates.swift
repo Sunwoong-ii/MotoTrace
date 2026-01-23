@@ -81,7 +81,10 @@ public extension Project {
             .target(name: "\(name)Interface")
         ]
 
-        let resolvedInterfaceDependencies = interfaceDependencies + [.makeDependency(name: .shared)]
+        let resolvedInterfaceDependencies = interfaceDependencies + [
+            .makeDependency(name: .shared),
+            .makeDependency(name: .appDI)
+        ]
         
         let resolvedImplementationDependencies = unique(
             defaultImplementationDependencies +

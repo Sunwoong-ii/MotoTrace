@@ -62,10 +62,8 @@ struct TourView_Previews: PreviewProvider {
         ]
         TourView(
             store: TourStore(
-                dependencies: TourDependencies(
-                    sensors: PreviewSensors(),
-                    analyzer: PreviewAnalyzer()
-                )
+                sensors: PreviewSensors(),
+                analyzer: PreviewAnalyzer()
             ),
             routeCoordinates: routeCoordinates
         )

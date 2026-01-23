@@ -1,17 +1,29 @@
 import SwiftUI
+import AppDI
+import CoreSensors
+import CoreTracking
+import CoreDataStorage
 import FeatureTour
 import FeatureTourInterface
-import CoreSensorsInterface
-import CoreTrackingInterface
 
 struct FeatureTourDemoView: View {
-//    private let dependencies: TourDependencies = TourDependencies(
-//        sensors: CoreSensorsFactory.create(),
-//        analyzer: TrackingAnalyzerFactory.create()
-//    )
+    private let container: AppDIContainer
+    
+    init() {
+        let container = AppDIContainer()
+        
+        // Demo용 DI 설정 (Assembly 사용)
+        CoreSensorsAssembly.register(in: container)
+        CoreTrackingAssembly.register(in: container)
+        CoreDataStorageAssembly.register(in: container)
+        
+        self.container = container
+    }
     
     var body: some View {
-        Text("")
-//        TourFeatureAssembler.assemble(dependencies: dependencies)
+        TourFeatureAssembler.assemble(
+            container: container,
+            initialState: RidingState()
+        )
     }
 }
