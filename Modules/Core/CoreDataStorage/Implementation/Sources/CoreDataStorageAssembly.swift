@@ -13,11 +13,6 @@ import SwiftData
 /// CoreDataStorage DI 등록
 public enum CoreDataStorageAssembly: DIAssembly {
     public static func register(in container: AppDIContainer) {
-        // DataStorageService (레거시)
-        container.register(DataStorageServiceInterface.self, scope: .singleton) {
-            DataStorageService()
-        }
-        
         // TourRepository (파라미터: ModelContainer)
         container.register(TourRepositoryInterface.self, scope: .singleton) { (modelContainer: ModelContainer) in
             TourRepository(modelContainer: modelContainer)

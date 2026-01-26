@@ -1,5 +1,6 @@
 import SwiftUI
 import AppDI
+import SwiftData
 
 @main
 struct MotoTraceApp: App {

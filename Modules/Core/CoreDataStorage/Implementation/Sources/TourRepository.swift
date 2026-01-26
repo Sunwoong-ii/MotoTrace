@@ -12,11 +12,7 @@ import CoreDataStorageInterface
 /// 투어 Repository 구현
 @ModelActor
 public actor TourRepository: TourRepositoryInterface {
-    public init(modelContainer: ModelContainer) {
-        self.modelContainer = modelContainer
-        let modelContext = modelContainer.mainContext
-        modelExecutor = DefaultSerialModelExecutor(modelContext: modelContext)
-    }
+
     
     public func saveTour(_ tour: TourRecordDTO) async throws {
         let record = TourRecord(
