@@ -11,7 +11,7 @@ import FeatureTourInterface
 
 @MainActor
 internal final class TourStore: ObservableObject {
-    @Published private(set) var state: RidingState
+    @Published private(set) var state: TourState
     
     private let sensors: CoreSensorsInterface
     private let analyzer: TrackingAnalyzerInterface
@@ -21,14 +21,14 @@ internal final class TourStore: ObservableObject {
     internal init(
         sensors: CoreSensorsInterface,
         analyzer: TrackingAnalyzerInterface,
-        initialState: RidingState = RidingState()
+        initialState: TourState = TourState()
     ) {
         self.sensors = sensors
         self.analyzer = analyzer
         self.state = initialState
     }
     
-    internal func send(_ intent: RidingIntent) {
+    internal func send(_ intent: TourIntent) {
         switch intent {
         case .startTracking:
             startTracking()
@@ -41,7 +41,7 @@ internal final class TourStore: ObservableObject {
 private extension TourStore {
     func startTracking() {
         guard locationTask == nil, motionTask == nil else { return }
-        state.isRiding = true
+        state.trackingStatus = .tracking
         
         sensors.requestWhenInUseAuthorization()
         sensors.start()
@@ -87,7 +87,7 @@ private extension TourStore {
     }
     
     func stopTracking() {
-        state.isRiding = false
+        state.trackingStatus = .idle
         sensors.stop()
         locationTask?.cancel()
         motionTask?.cancel()

@@ -8,7 +8,7 @@ import FeatureTourInterface
 public enum TourFeatureAssembler: @preconcurrency TourFeatureAssembling {
     
     @MainActor
-    public static func assemble(container: AppDIContainer, initialState: RidingState) -> AnyView {
+    public static func assemble(container: AppDIContainer, initialState: TourState) -> AnyView {
         let sensors = container.resolve(CoreSensorsInterface.self)
         let analyzer = container.resolve(
             TrackingAnalyzerInterface.self,

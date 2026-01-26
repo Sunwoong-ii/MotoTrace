@@ -56,6 +56,13 @@ internal struct TourView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .padding(12)
         }
+        .overlay(alignment: .bottom) {
+            TourStatView()
+                .frame(height: 250)
+                .padding([.horizontal, .bottom], 10)
+                
+                
+        }
         .onAppear { store.send(.startTracking) }
         .onDisappear { store.send(.stopTracking) }
     }
