@@ -39,16 +39,6 @@ public struct AttitudeData: Codable {
     }
 }
 
-public struct AccelerationData: Codable {
-    public let timestamp: Date
-    public let accelerationG: Double
-    
-    public init(timestamp: Date, accelerationG: Double) {
-        self.timestamp = timestamp
-        self.accelerationG = accelerationG
-    }
-}
-
 public struct TrackingThresholds: Codable {
     public let accelerationKmhPerSec: Double
     public let decelerationKmhPerSec: Double
@@ -86,18 +76,6 @@ public enum TrackingEventType: String, Codable {
     case leanAngle
 }
 
-public struct TrackingEvent: Codable {
-    public let type: TrackingEventType
-    public let timestamp: Date
-    public let value: Double
-    
-    public init(type: TrackingEventType, timestamp: Date, value: Double) {
-        self.type = type
-        self.timestamp = timestamp
-        self.value = value
-    }
-}
-
 public enum SpeedChangeEventType: String, Codable {
     case rapidAcceleration
     case rapidDeceleration
@@ -110,6 +88,7 @@ public struct SpeedChangeEvent: Codable {
     public let startSpeedKmh: Double
     public let endSpeedKmh: Double
     public let durationSeconds: TimeInterval
+    public let location: Location
     
     public init(
         type: SpeedChangeEventType,
@@ -117,7 +96,8 @@ public struct SpeedChangeEvent: Codable {
         endTimestamp: Date,
         startSpeedKmh: Double,
         endSpeedKmh: Double,
-        durationSeconds: TimeInterval
+        durationSeconds: TimeInterval,
+        location: Location
     ) {
         self.type = type
         self.startTimestamp = startTimestamp
@@ -125,30 +105,11 @@ public struct SpeedChangeEvent: Codable {
         self.startSpeedKmh = startSpeedKmh
         self.endSpeedKmh = endSpeedKmh
         self.durationSeconds = durationSeconds
-    }
-}
-
-public struct TrackingEventLocation: Codable {
-    public let event: TrackingEvent
-    public let location: TrackingData?
-    
-    public init(event: TrackingEvent, location: TrackingData?) {
-        self.event = event
         self.location = location
     }
 }
 
-public struct SpeedChangeEventLocation: Codable {
-    public let event: SpeedChangeEvent
-    public let location: TrackingData?
-    
-    public init(event: SpeedChangeEvent, location: TrackingData?) {
-        self.event = event
-        self.location = location
-    }
-}
-/// 추적 데이터 DTO
-public struct TrackingData: Codable {
+public struct Location: Codable {
     public let latitude: Double
     public let longitude: Double
     public let timestamp: Date
