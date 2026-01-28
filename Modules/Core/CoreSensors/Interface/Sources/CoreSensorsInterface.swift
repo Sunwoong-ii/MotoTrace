@@ -12,6 +12,7 @@ public protocol CoreSensorsInterface {
     func requestAlwaysAuthorization()
     func start()
     func stop()
-    func locationStream() -> AsyncStream<Location>
+    
+    func speedLocationStream() -> AsyncStream<Location>
     func motionStream() -> AsyncStream<Motion>
 }

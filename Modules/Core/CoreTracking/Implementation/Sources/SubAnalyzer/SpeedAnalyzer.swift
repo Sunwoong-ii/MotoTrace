@@ -7,101 +7,189 @@
 import Foundation
 import CoreTrackingInterface
 
-internal final class SpeedAnalyzer {
+ final class SpeedAnalyzer {
+    var onEvent: ((SpeedEvent) -> Void)?
+    
     private struct MotionTrigger {
         let timestamp: Date
         let accelerationKmhPerSec: Double
     }
     
     private enum ActiveSpeedEvent {
-        case acceleration(start: SpeedData)
-        case deceleration(start: SpeedData)
+        case acceleration(start: LocationSnapshot)
+        case deceleration(start: LocationSnapshot)
     }
     
     private var thresholds: TrackingThresholds
-    private var lastSpeedData: SpeedData?
+    private var lastSnapshot: LocationSnapshot?
     private var movingTimeSeconds: TimeInterval = 0
     private var movingDistanceKm: Double = 0
-    private var lastMotionTrigger: MotionTrigger?
     private var activeEvent: ActiveSpeedEvent?
     
-    internal init(thresholds: TrackingThresholds) {
+    // Real-time tracking
+    private var topSpeedKmh: Double = 0
+    private var currentSpeedKmh: Double = 0
+    
+     init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
+     
+     func updateSpeed(_ currentSnapshot: LocationSnapshot) -> TrackingEvent? {
+         defer { lastSnapshot = currentSnapshot }
+         
+         updateSpeedTracking(currentSnapshot)
+         
+         guard let prevSnapshot = lastSnapshot else { return nil }
+         let deltaTime = currentSnapshot.location.timestamp.timeIntervalSince(prevSnapshot.timestamp)
+         guard deltaTime > 0 else { return nil }
+         
+         let accel = calculateAcceleration(
+            current: currentSnapshot,
+            previous: prevSnapshot,
+            deltaTime: deltaTime
+         )
+         
+         let event = processSpeedEvents(
+            accel: accel,
+            current: currentSnapshot,
+            previous: prevSnapshot,
+            location: currentSnapshot.location
+         )
+         
+         updateMovingStats(speed: currentSnapshot.speedKmh, deltaTime: deltaTime)
+         
+         return event
+     }
     
-    internal func updateSpeed(_ currentSpeedData: SpeedData) -> [SpeedChangeEvent] {
-        defer { lastSpeedData = currentSpeedData }
-        var events: [SpeedChangeEvent] = []
+    // MARK: - Private Helper Methods
+    
+    private func updateSpeedTracking(_ snapshot: LocationSnapshot) {
+        currentSpeedKmh = snapshot.speedKmh
+        if snapshot.speedKmh > topSpeedKmh {
+            topSpeedKmh = snapshot.speedKmh
+        }
+    }
+    
+    private func calculateAcceleration(
+        current: LocationSnapshot,
+        previous: LocationSnapshot,
+        deltaTime: TimeInterval
+    ) -> Double {
+        let deltaSpeed = current.speedKmh - previous.speedKmh
+        return deltaSpeed / deltaTime
+    }
+    
+    private func processSpeedEvents(
+        accel: Double,
+        current: LocationSnapshot,
+        previous: LocationSnapshot,
+        location: Location
+    ) -> TrackingEvent? {
+        var events: TrackingEvent?
         
-        guard let previous = lastSpeedData else { return events }
-        let deltaTime = currentSpeedData.timestamp.timeIntervalSince(previous.timestamp)
-        
-        if deltaTime > 0 {
-            let deltaSpeed = currentSpeedData.speedKmh - previous.speedKmh
-            let accel = deltaSpeed / deltaTime
-            let motionTriggerActive = isMotionTriggerActive(at: currentSpeedData.timestamp)
+        switch activeEvent {
+        case nil:
+            handleNoActiveEvent(accel: accel, previous: previous)
             
-            let triggerAllowed = motionTriggerActive || lastMotionTrigger == nil
-            switch activeEvent {
-            case nil:
-                if accel >= thresholds.accelerationKmhPerSec && triggerAllowed {
-                    activeEvent = .acceleration(start: previous)
-                } else if accel <= -thresholds.decelerationKmhPerSec && triggerAllowed {
-                    activeEvent = .deceleration(start: previous)
-                }
-            case .acceleration(let startSpeedData):
-                if accel < thresholds.accelerationKmhPerSec {
-                    if let event = makeSpeedChangeEvent(
-                        type: .rapidAcceleration,
-                        start: startSpeedData,
-                        end: currentSpeedData
-                    ) {
-                        events.append(event)
-                    }
-                    activeEvent = nil
-                } else if accel <= -thresholds.decelerationKmhPerSec && triggerAllowed {
-                    if let event = makeSpeedChangeEvent(
-                        type: .rapidAcceleration,
-                        start: startSpeedData,
-                        end: currentSpeedData
-                    ) {
-                        events.append(event)
-                    }
-                    activeEvent = .deceleration(start: previous)
-                }
-            case .deceleration(let startSpeedData):
-                if accel > -thresholds.decelerationKmhPerSec {
-                    if let event = makeSpeedChangeEvent(
-                        type: .rapidDeceleration,
-                        start: startSpeedData,
-                        end: currentSpeedData
-                    ) {
-                        events.append(event)
-                    }
-                    activeEvent = nil
-                } else if accel >= thresholds.accelerationKmhPerSec && triggerAllowed {
-                    if let event = makeSpeedChangeEvent(
-                        type: .rapidDeceleration,
-                        start: startSpeedData,
-                        end: currentSpeedData
-                    ) {
-                        events.append(event)
-                    }
-                    activeEvent = .acceleration(start: previous)
-                }
-            }
+        case .acceleration(let startSpeedData):
+            events = handleAccelerationEvent(
+                accel: accel,
+                start: startSpeedData,
+                current: current,
+                previous: previous,
+                location: location
+            )
             
-            if currentSpeedData.speedKmh >= thresholds.stopSpeedKmh {
-                let secondsPerHour = 3600.0
-                movingTimeSeconds += deltaTime
-                movingDistanceKm += (currentSpeedData.speedKmh * (deltaTime / secondsPerHour))
-            }
+        case .deceleration(let startSpeedData):
+            events = handleDecelerationEvent(
+                accel: accel,
+                start: startSpeedData,
+                current: current,
+                previous: previous,
+                location: location
+            )
         }
         
         return events
     }
     
-    internal func stats() -> TourStats {
+    private func handleNoActiveEvent(accel: Double, previous: LocationSnapshot) {
+        if accel >= thresholds.accelerationKmhPerSec {
+            activeEvent = .acceleration(start: previous)
+        } else if accel <= -thresholds.decelerationKmhPerSec {
+            activeEvent = .deceleration(start: previous)
+        }
+    }
+     
+     private func handleAccelerationEvent(
+        accel: Double,
+        start: LocationSnapshot,
+        current: LocationSnapshot,
+        previous: LocationSnapshot,
+        location: Location
+     ) -> TrackingEvent? {
+        
+         let shouldEndAcceleration = accel < thresholds.accelerationKmhPerSec
+         let shouldTransitionToDeceleration = accel <= -thresholds.decelerationKmhPerSec
+         
+         guard shouldEndAcceleration ||
+                shouldTransitionToDeceleration else { return nil }
+         
+         if shouldEndAcceleration {
+             activeEvent = nil
+         }
+         
+         if shouldTransitionToDeceleration {
+             activeEvent = .deceleration(start: previous)
+         }
+         
+         return makeSpeedChangeEvent(
+            type: .rapidAcceleration,
+            start: start,
+            end: current,
+            location: location
+         )
+     }
+    
+    private func handleDecelerationEvent(
+        accel: Double,
+        start: LocationSnapshot,
+        current: LocationSnapshot,
+        previous: LocationSnapshot,
+        location: Location
+    ) -> TrackingEvent? {
+        
+        let shouldEndDeceleration = accel > -thresholds.decelerationKmhPerSec
+        let shouldTransitionToAcceleration = accel >= thresholds.accelerationKmhPerSec
+        
+        guard shouldEndDeceleration ||
+                shouldTransitionToAcceleration else { return nil }
+        
+        if shouldEndDeceleration {
+            activeEvent = nil
+        }
+        
+        if shouldTransitionToAcceleration {
+            activeEvent = .acceleration(start: previous)
+        }
+        
+        return makeSpeedChangeEvent(
+            type: .rapidDeceleration,
+            start: start,
+            end: current,
+            location: location
+        )
+    }
+    
+    private func updateMovingStats(speed: Double, deltaTime: TimeInterval) {
+        if speed >= thresholds.stopSpeedKmh {
+            let secondsPerHour = 3600.0
+            movingTimeSeconds += deltaTime
+            movingDistanceKm += (speed * (deltaTime / secondsPerHour))
+        }
+    }
+    
+     func stats() -> TourStats {
         let averageSpeed: Double
         if movingTimeSeconds > 0 {
             let secondsPerHour = 3600.0
@@ -116,55 +204,60 @@ internal final class SpeedAnalyzer {
         )
     }
     
-    internal func setThresholds(_ thresholds: TrackingThresholds) {
+     func setThresholds(_ thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
 
-    internal func updateAcceleration(_ data: AccelerationData) {
+     func updateAcceleration(_ data: MotionSnapshot) {
+        let accelerationG = sqrt(
+            data.userAccelerationX * data.userAccelerationX +
+            data.userAccelerationY * data.userAccelerationY +
+            data.userAccelerationZ * data.userAccelerationZ
+        )
+        
         let gravityMetersPerSecondSquared = 9.81
         let metersPerSecondToKmh = 3.6
-        let accelerationKmhPerSec =
-            data.accelerationG *
-            gravityMetersPerSecondSquared *
-            metersPerSecondToKmh
-        lastMotionTrigger = MotionTrigger(
-            timestamp: data.timestamp,
-            accelerationKmhPerSec: accelerationKmhPerSec
-        )
+        let accelerationKmhPerSec = accelerationG *
+                                    gravityMetersPerSecondSquared *
+                                    metersPerSecondToKmh
     }
     
-    internal func reset() {
-        lastSpeedData = nil
+     func reset() {
+        lastSnapshot = nil
         movingTimeSeconds = 0
         movingDistanceKm = 0
-        lastMotionTrigger = nil
         activeEvent = nil
-    }
-
-    func isMotionTriggerActive(at timestamp: Date) -> Bool {
-        guard let trigger = lastMotionTrigger else { return false }
-        let delta = abs(trigger.timestamp.timeIntervalSince(timestamp))
-        let motionTriggerWindowSeconds: TimeInterval = 0.6
-        if delta > motionTriggerWindowSeconds {
-            return false
-        }
-        return abs(trigger.accelerationKmhPerSec) >= thresholds.accelerationKmhPerSec
+        topSpeedKmh = 0
+        currentSpeedKmh = 0
     }
     
     func makeSpeedChangeEvent(
-        type: SpeedChangeEventType,
-        start: SpeedData,
-        end: SpeedData
-    ) -> SpeedChangeEvent? {
+        type: TrackingEventType,
+        start: LocationSnapshot,
+        end: LocationSnapshot,
+        location: Location
+    ) -> TrackingEvent? {
         let duration = end.timestamp.timeIntervalSince(start.timestamp)
         guard duration > 0 else { return nil }
-        return SpeedChangeEvent(
+        return TrackingEvent(
             type: type,
             startTimestamp: start.timestamp,
             endTimestamp: end.timestamp,
             startSpeedKmh: start.speedKmh,
             endSpeedKmh: end.speedKmh,
-            durationSeconds: duration
+            durationSeconds: duration,
+            location: location
         )
     }
+    
+    // MARK: - Getters
+    
+     func currentSpeed() -> Double {
+        currentSpeedKmh
+    }
+    
+     func topSpeed() -> Double {
+        topSpeedKmh
+    }
+
 }

@@ -55,7 +55,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         motionManager.stopDeviceMotionUpdates()
     }
     
-    func locationStream() -> AsyncStream<Location> {
+    func speedLocationStream() -> AsyncStream<Location> {
         locationStreamValue
     }
     

@@ -8,16 +8,22 @@ import Foundation
 import CoreLocation
 
 public protocol TrackingAnalyzerInterface {
-    func updateSpeed(_ data: SpeedData) -> [SpeedChangeEvent]
-    func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent]
-    func updateAttitude(_ data: AttitudeData) -> [TrackingEvent]
-    func updateAcceleration(_ data: AccelerationData)
-    func mapEventsToLocations(_ events: [TrackingEvent]) -> [TrackingEventLocation]
-    func mapSpeedEventsToLocations(_ events: [SpeedChangeEvent]) -> [SpeedChangeEventLocation]
-    func recordLocation(_ data: TrackingData)
-    func route() -> [TrackingData]
+    func startTour(tourId: UUID)
+    func finishTour() async throws
+    
+    func updateSpeed(_ data: LocationSnapshot, location: Location) async throws -> [TrackingEvent]
+    func updateAttitude(_ data: MotionSnapshot) async throws -> [TrackingEvent]
+    func updateAcceleration(_ data: MotionSnapshot)
+    
+    func recordLocation(_ data: LocationSnapshot) async throws
+    
     func stats() -> TourStats
     func setThresholds(_ thresholds: TrackingThresholds)
     func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double)
     func reset()
+    
+    // MARK: - Real-time Data Getters
+    func currentSpeed() -> Double
+    func topSpeed() -> Double
+    func topLeanAngle() -> Double
 }

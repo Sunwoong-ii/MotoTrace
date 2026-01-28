@@ -132,6 +132,26 @@ public actor TourRepository: TourRepositoryInterface {
         try modelContext.save()
     }
     
+    public func updateTourStats(
+        id: UUID,
+        duration: TimeInterval,
+        distance: Double,
+        avgSpeed: Double,
+        topSpeed: Double,
+        maxLeanAngle: Double
+    ) async throws {
+        guard let tour = try fetchTourEntity(id: id) else { return }
+        
+        tour.duration = duration
+        tour.distance = distance
+        tour.avgSpeed = avgSpeed
+        tour.topSpeed = topSpeed
+        tour.maxLeanAngle = maxLeanAngle
+        
+        try modelContext.save()
+    }
+
+    
     // MARK: - Private Helpers
     
     private func flushLocationBuffer(to tourId: UUID) async throws {

@@ -3,52 +3,63 @@
 //
 //  Created by Woong on 2026/01/20.
 //
+
 import Foundation
 import CoreTrackingInterface
 
-internal final class LeanAnalyzer {
+final class LeanAnalyzer {
     private var thresholds: TrackingThresholds
     private var leanZeroRoll: Double = 0
     private var leanZeroPitch: Double = 0
     
-    internal init(thresholds: TrackingThresholds) {
+    private var topLeanAngleDegrees: Double = 0
+    var onEvent: ((LeanEvent) -> Void)?
+    
+    init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
     
-    internal func updateLeanAngle(_ data: LeanAngleData) -> [TrackingEvent] {
-        let relativeAngle = data.angleDegrees
-        if abs(relativeAngle) >= thresholds.minLeanAngleDegrees {
-            return [
-                TrackingEvent(
-                    type: .leanAngle,
-                    timestamp: data.timestamp,
-                    value: relativeAngle
-                )
-            ]
-        }
-        return []
-    }
-    
-    internal func updateAttitude(_ data: AttitudeData) -> [TrackingEvent] {
+    func updateAttitude(_ data: MotionSnapshot, locationSnapshot: LocationSnapshot) -> LeanAngle {
         let deltaRoll = data.rollDegrees - leanZeroRoll
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
-        return updateLeanAngle(
-            LeanAngleData(timestamp: data.timestamp, angleDegrees: lean)
-        )
+        
+        if abs(lean) > abs(topLeanAngleDegrees) {
+            topLeanAngleDegrees = lean
+            onEvent?(.maxLeanAngleUpdated(lean))
+        }
+        
+        if abs(lean) >= thresholds.minLeanAngleDegrees {
+            let event = TrackingEvent(
+                startSpeedKmh: locationSnapshot.speedKmh,
+                location: locationSnapshot.location,
+                leanAngle: lean
+            )
+            
+            onEvent?(.leanAngle(event))
+        }
+        
+        return .init(angleDegrees: lean, location: locationSnapshot.location)
     }
-    
-    internal func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double) {
+
+    func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double) {
         leanZeroRoll = rollDegrees
         leanZeroPitch = pitchDegrees
     }
     
-    internal func setThresholds(_ thresholds: TrackingThresholds) {
+    func setThresholds(_ thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
     
-    internal func reset() {
+    func reset() {
         leanZeroRoll = 0
         leanZeroPitch = 0
+        topLeanAngleDegrees = 0
+    }
+    
+    // MARK: - Getters
+
+    func topLeanAngle() -> Double {
+        topLeanAngleDegrees
     }
 }

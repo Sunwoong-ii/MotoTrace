@@ -1,58 +1,11 @@
 //
-//  TrackingData.swift
+//  CoreDataDTO.swift
 //  CoreDataStorageInterface
 //
 //  Created by MotoTrace Team.
 //
 
 import Foundation
-
-/// 실시간 트래킹 중 발생하는 데이터 모델 (DB 저장 전)
-public struct TrackingData: Equatable {
-    /// 총 주행 시간 (초)
-    public let duration: TimeInterval
-    
-    /// 총 주행 거리 (미터)
-    public let distance: Double
-    
-    /// 현재까지의 평균 속도 (km/h)
-    public let avgSpeed: Double
-    
-    /// 현재까지의 최고 속도 (km/h)
-    public let topSpeed: Double
-    
-    /// 현재가지의 최대 뱅킹각 (도)
-    public let maxLeanAngle: Double
-    
-    /// 현재 실시간 속도 (km/h)
-    public let liveSpeed: Double
-    
-    /// 현재 실시간 뱅킹각 (도)
-    public let liveLeanAngle: Double
-    
-    /// GPS 수신 상태
-    public let gpsStatus: GPSStatus
-    
-    public init(
-        duration: TimeInterval,
-        distance: Double,
-        avgSpeed: Double,
-        topSpeed: Double,
-        maxLeanAngle: Double,
-        liveSpeed: Double,
-        liveLeanAngle: Double,
-        gpsStatus: GPSStatus
-    ) {
-        self.duration = duration
-        self.distance = distance
-        self.avgSpeed = avgSpeed
-        self.topSpeed = topSpeed
-        self.maxLeanAngle = maxLeanAngle
-        self.liveSpeed = liveSpeed
-        self.liveLeanAngle = liveLeanAngle
-        self.gpsStatus = gpsStatus
-    }
-}
 
 /// GPS 신호 상태
 public enum GPSStatus: String, Equatable {
@@ -103,12 +56,17 @@ public struct TourRecordDTO: Identifiable, Codable {
 public struct TourEventDTO: Identifiable, Codable {
     public let id: UUID
     public let type: String // RawValue of TourEventType
+    
     public let startTime: Date
     public let endTime: Date?
+    
     public let startSpeed: Double
     public let endSpeed: Double?
+    
     public let latitude: Double
     public let longitude: Double
+    
+    public let leanAngle: Double?
     
     public init(
         id: UUID = UUID(),
@@ -118,7 +76,8 @@ public struct TourEventDTO: Identifiable, Codable {
         startSpeed: Double,
         endSpeed: Double? = nil,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        leanAngle: Double? = nil
     ) {
         self.id = id
         self.type = type
@@ -128,6 +87,7 @@ public struct TourEventDTO: Identifiable, Codable {
         self.endSpeed = endSpeed
         self.latitude = latitude
         self.longitude = longitude
+        self.leanAngle = leanAngle
     }
 }
 
