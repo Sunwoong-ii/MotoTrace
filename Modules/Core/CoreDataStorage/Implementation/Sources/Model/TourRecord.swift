@@ -11,7 +11,7 @@ import CoreLocation
 
 /// 투어 기록 저장 모델 (DB)
 @Model
-final class TourRecord {
+public final class TourRecord {
     /// 고유 식별자
     @Attribute(.unique) var id: UUID
     
@@ -69,7 +69,7 @@ final class TourRecord {
 
 /// 위치 정보 모델 (TourRecord의 하위)
 @Model
-final class LocationPoint {
+public final class LocationPoint {
     @Attribute(.unique) var id: UUID
     var latitude: Double
     var longitude: Double

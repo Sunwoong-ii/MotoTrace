@@ -20,7 +20,7 @@ enum AppDISetup {
         // SwiftData ModelContainer 생성
         let schema = Schema([
             TourRecord.self,
-            RoutePoint.self,
+            LocationPoint.self,
             TourEvent.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

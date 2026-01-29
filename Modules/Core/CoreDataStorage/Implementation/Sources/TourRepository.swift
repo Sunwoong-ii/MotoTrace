@@ -22,11 +22,6 @@ public actor TourRepository: TourRepositoryInterface {
     private let statsSaveInterval = 30
     private var latestTripStats: TripStats?
     
-    public init(modelContainer: ModelContainer) {
-        let modelContext = ModelContext(modelContainer)
-        self.modelExecutor = DefaultSerialModelExecutor(modelContext: modelContext)
-    }
-    
     // MARK: - Real-time Tracking Methods
     
     public func createTour(_ dto: TourRecordDTO) async throws {

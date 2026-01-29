@@ -10,7 +10,7 @@ import SwiftData
 
 /// 투어 중 발생한 특이 이벤트 모델 (DB)
 @Model
-final class TourEvent {
+public final class TourEvent {
     @Attribute(.unique) var id: UUID
     
     /// 이벤트 타입

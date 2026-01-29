@@ -10,12 +10,11 @@ import CoreDataStorageInterface
 import Foundation
 import SwiftData
 
-/// CoreDataStorage DI 등록
 public enum CoreDataStorageAssembly: DIAssembly {
     public static func register(in container: AppDIContainer) {
-        // TourRepository (파라미터: ModelContainer)
-        container.register(TourRepositoryInterface.self, scope: .singleton) { (modelContainer: ModelContainer) in
-            TourRepository(modelContainer: modelContainer)
+        container.register(TourRepositoryInterface.self, scope: .singleton) {
+            let modelContainer = container.resolve(ModelContainer.self)
+            return TourRepository(modelContainer: modelContainer)
         }
     }
 }

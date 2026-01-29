@@ -7,13 +7,14 @@
 
 import AppDI
 import CoreTrackingInterface
+import CoreDataStorageInterface
 import Foundation
 
-/// CoreTracking DI 등록
 public enum CoreTrackingAssembly: DIAssembly {
     public static func register(in container: AppDIContainer) {
         container.register(TrackingAnalyzerInterface.self, scope: .transient) { (deps: CoreTrackingDependencies) in
-            TrackingAnalyzer(thresholds: deps.thresholds)
+            let repository = container.resolve(TourRepositoryInterface.self)
+            return TrackingAnalyzer(thresholds: deps.thresholds, repository: repository)
         }
     }
 }
