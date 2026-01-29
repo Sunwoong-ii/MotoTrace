@@ -7,8 +7,18 @@
 import Foundation
 import CoreTrackingInterface
 
+struct SpeedAnalyzerResult {
+    var topSpeedUpdated: Double?
+    var event: TrackingEvent?
+    
+    init(maxSpeedUpdated: Double? = nil,
+         event: TrackingEvent? = nil) {
+        self.topSpeedUpdated = maxSpeedUpdated
+        self.event = event
+    }
+}
+
 final class SpeedAnalyzer {
-    var onEvent: ((SpeedEvent) -> Void)?
     
     private struct MotionTrigger {
         let timestamp: Date
@@ -36,7 +46,7 @@ final class SpeedAnalyzer {
         self.thresholds = thresholds
     }
     
-    func updateSpeed(_ currentSnapshot: LocationSnapshot) -> TrackingEvent? {
+    func updateSpeed(_ currentSnapshot: LocationSnapshot) -> SpeedAnalyzerResult {
         defer {
             recentSnapshots.append(currentSnapshot)
             if recentSnapshots.count > snapshotBufferCount {
@@ -44,11 +54,17 @@ final class SpeedAnalyzer {
             }
         }
         
-        updateSpeedTracking(currentSnapshot)
+        var result = SpeedAnalyzerResult()
         
-        guard let prevSnapshot = recentSnapshots.first else { return nil }
+        currentSpeedKmh = currentSnapshot.speedKmh
+        if currentSnapshot.speedKmh > topSpeedKmh {
+            topSpeedKmh = currentSnapshot.speedKmh
+            result.topSpeedUpdated = topSpeedKmh
+        }
+        
+        guard let prevSnapshot = recentSnapshots.first else { return result }
         let deltaTime = currentSnapshot.location.timestamp.timeIntervalSince(prevSnapshot.timestamp)
-        guard deltaTime > 0 else { return nil }
+        guard deltaTime > 0 else { return result }
         
         let accel = calculateAcceleration(
             current: currentSnapshot,
@@ -56,7 +72,7 @@ final class SpeedAnalyzer {
             deltaTime: deltaTime
         )
         
-        let event = processSpeedEvents(
+        result.event = processSpeedEvents(
             accel: accel,
             current: currentSnapshot,
             previous: prevSnapshot,
@@ -65,7 +81,7 @@ final class SpeedAnalyzer {
         
         updateMovingStats(speed: currentSnapshot.speedKmh, deltaTime: deltaTime)
         
-        return event
+        return result
     }
     
     // MARK: - Private Helper Methods

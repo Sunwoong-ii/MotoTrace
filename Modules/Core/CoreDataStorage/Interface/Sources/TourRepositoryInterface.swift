@@ -38,11 +38,8 @@ public protocol TourRepositoryInterface {
     func updateTripStats(id: UUID, tripStats: TripStats) async throws
     
     /// 성능 기록 (최고 속도, 최대 뱅킹각)
-    func updatePerformanceRecords(
-        id: UUID,
-        topSpeed: Double?,
-        maxLeanAngle: Double?
-    ) async throws
+    func updateTopSpeed(id: UUID, speed: Double) async throws
+    func updateTopLeanAngle(id: UUID, leanAngle: Double) async throws
     
     /// 투어 완료 (트래킹 종료 시)
     func finishTour(id: UUID) async throws

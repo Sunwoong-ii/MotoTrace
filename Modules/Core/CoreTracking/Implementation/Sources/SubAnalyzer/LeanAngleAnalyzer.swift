@@ -7,26 +7,37 @@
 import Foundation
 import CoreTrackingInterface
 
+struct LeanAnalyzerResult {
+    var maxLeanAngleUpdated: Double?
+    var event: TrackingEvent?
+    
+    init(maxLeanAngleUpdated: Double? = nil,
+         event: TrackingEvent? = nil) {
+        self.maxLeanAngleUpdated = maxLeanAngleUpdated
+        self.event = event
+    }
+}
+
 final class LeanAnalyzer {
     private var thresholds: TrackingThresholds
     private var leanZeroRoll: Double = 0
     private var leanZeroPitch: Double = 0
     
     private var topLeanAngleDegrees: Double = 0
-    var onEvent: ((LeanEvent) -> Void)?
     
     init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
     
-    func updateAttitude(_ data: MotionSnapshot, locationSnapshot: LocationSnapshot) -> LeanAngle {
+    func updateAttitude(_ data: MotionSnapshot, locationSnapshot: LocationSnapshot) -> LeanAnalyzerResult {
         let deltaRoll = data.rollDegrees - leanZeroRoll
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
         
+        var result = LeanAnalyzerResult()
         if abs(lean) > abs(topLeanAngleDegrees) {
             topLeanAngleDegrees = lean
-            onEvent?(.maxLeanAngleUpdated(lean))
+            result.maxLeanAngleUpdated = lean
         }
         
         if abs(lean) >= thresholds.minLeanAngleDegrees {
@@ -36,10 +47,10 @@ final class LeanAnalyzer {
                 leanAngle: lean
             )
             
-            onEvent?(.leanAngle(event))
+            result.event = event
         }
         
-        return .init(angleDegrees: lean, location: locationSnapshot.location)
+        return result
     }
 
     func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double) {

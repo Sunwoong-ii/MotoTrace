@@ -112,21 +112,15 @@ public actor TourRepository: TourRepositoryInterface {
     }
     
     // 성능 기록 (최고 속도, 최대 뱅킹각)
-    public func updatePerformanceRecords(
-        id: UUID,
-        topSpeed: Double?,
-        maxLeanAngle: Double?
-    ) async throws {
+    public func updateTopSpeed(id: UUID, speed: Double) async throws {
         guard let tour = try fetchTourEntity(id: id) else { return }
-        
-        if let topSpeed {
-            tour.topSpeed = topSpeed
-        }
-        
-        if let maxLeanAngle {
-            tour.maxLeanAngle = maxLeanAngle
-        }
-        
+        tour.topSpeed = speed
+        try modelContext.save()
+    }
+    
+    public func updateTopLeanAngle(id: UUID, leanAngle: Double) async throws {
+        guard let tour = try fetchTourEntity(id: id) else { return }
+        tour.maxLeanAngle = leanAngle
         try modelContext.save()
     }
     

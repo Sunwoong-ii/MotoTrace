@@ -8,11 +8,6 @@ import Foundation
 import CoreTrackingInterface
 import CoreDataStorageInterface
 
-enum LeanEvent {
-    case maxLeanAngleUpdated(Double)
-    case leanAngle(TrackingEvent)
-}
-
 enum SpeedEvent {
     case maxSpeedUpdated(Double)
     case rapidAcceleration(TrackingEvent)
@@ -20,11 +15,10 @@ enum SpeedEvent {
 }
 
 final class TrackingAnalyzer: TrackingAnalyzerInterface {
-    private let maxLocationBufferCount = 120
     private var thresholds: TrackingThresholds
     private var speedAnalyzer: SpeedAnalyzer
     private var leanAnalyzer: LeanAnalyzer
-    private var recentLocations: [Location] = []
+    private var recentLocation: LocationSnapshot?
     
     // Repository integration
     private let repository: TourRepositoryInterface
@@ -35,24 +29,6 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
         self.speedAnalyzer = SpeedAnalyzer(thresholds: thresholds)
         self.leanAnalyzer = LeanAnalyzer(thresholds: thresholds)
         self.repository = repository
-    }
-    
-    
-    private func setupCallback() {
-        leanAnalyzer.onEvent = { [weak self] (event: LeanEvent) in
-            switch event {
-            case .maxLeanAngleUpdated(let double): break
-            case .leanAngle(let trackingEvent): break
-            }
-        }
-        
-        speedAnalyzer.onEvent = { [weak self] (event: SpeedEvent) in
-            switch event {
-            case .maxSpeedUpdated(let double): break
-            case .rapidAcceleration(let trackingEvent): break
-            case .rapidDeceleration(let trackingEvent): break
-            }
-        }
     }
     
     // MARK: - Tour Lifecycle
@@ -71,21 +47,19 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
     // MARK: - Data Updates
     
     func updateSpeed(_ data: LocationSnapshot) async throws -> TrackingEvent? {
-        let events = speedAnalyzer.updateSpeed(data)
+        let result = speedAnalyzer.updateSpeed(data)
+        try await saveSpeedEvent(result)
         
-        if let events {
-            
-            try await saveSpeedEvents(events)
-        }
-        
-        return events
+        return result.event
     }
     
     func updateAttitude(_ data: MotionSnapshot) async throws -> TrackingEvent? {
-        guard let recentLocation = recentLocations.last else { return nil }
-        let events = leanAnalyzer.updateAttitude(data, location: recentLocation)
-        try await saveLeanAngleEvents(events)
-        return events
+        guard let recentLocation else { return nil }
+        let result = leanAnalyzer.updateAttitude(data, locationSnapshot: recentLocation)
+        try await
+        saveLeanEvent(result)
+        
+        return result.event
     }
     
     func updateAcceleration(_ data: MotionSnapshot) {
@@ -93,8 +67,7 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
     }
     
     func recordLocation(_ data: LocationSnapshot) async throws {
-        recentLocations.append(data.location)
-        trimLocationBuffer()
+        recentLocation = data
         try await saveLocation(data)
     }
     
@@ -117,7 +90,7 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
     func reset() {
         speedAnalyzer.reset()
         leanAnalyzer.reset()
-        recentLocations.removeAll()
+        recentLocation = nil
     }
     
     // MARK: - Real-time Data Getters
@@ -137,18 +110,10 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
 }
 
 private extension TrackingAnalyzer {
-    func trimLocationBuffer() {
-        if recentLocations.count > maxLocationBufferCount {
-            recentLocations.removeFirst(recentLocations.count - maxLocationBufferCount)
-        }
-    }
-    
     // MARK: - Repository Save Helpers
     
-    func saveSpeedEvents(_ event: TrackingEvent) async throws {
-        guard let tourId = currentTourId else { return }
-        
-        let eventDTO = TourEventDTO(
+    func toDTO(event: TrackingEvent) -> TourEventDTO {
+        return TourEventDTO(
             type: event.type.rawValue,
             startTime: event.startTimestamp,
             endTime: event.endTimestamp,
@@ -158,8 +123,6 @@ private extension TrackingAnalyzer {
             longitude: event.location.longitude,
             leanAngle: event.leanAngle
         )
-
-        try await repository.addEvent(eventDTO, to: tourId)
     }
     
     func saveLocation(_ data: LocationSnapshot) async throws {
@@ -172,5 +135,29 @@ private extension TrackingAnalyzer {
             speed: data.speedKmh
         )
         try await repository.addLocation(locationDTO, to: tourId)
+    }
+    
+    private func saveLeanEvent(_ event: LeanAnalyzerResult) async throws {
+        guard let currentTourId  else { return }
+        
+        if let maxLeanAngleUpdated = event.maxLeanAngleUpdated {
+            try await repository.updateTopLeanAngle(id: currentTourId, leanAngle: maxLeanAngleUpdated)
+        }
+        
+        if let event = event.event {
+            try await repository.addEvent(toDTO(event: event), to: currentTourId)
+        }
+    }
+    
+    private func saveSpeedEvent(_ event: SpeedAnalyzerResult) async throws {
+        guard let currentTourId  else { return }
+        
+        if let topSpeedUpdated = event.topSpeedUpdated {
+            try await repository.updateTopSpeed(id: currentTourId, speed: topSpeedUpdated)
+        }
+        
+        if let event = event.event {
+            try await repository.addEvent(toDTO(event: event), to: currentTourId)
+        }
     }
 }
