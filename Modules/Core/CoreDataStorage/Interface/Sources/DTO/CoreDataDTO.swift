@@ -7,6 +7,22 @@
 
 import Foundation
 
+public struct TripStats {
+    public let duration: TimeInterval
+    public let distance: Double
+    public let avgSpeed: Double
+    
+    public init(
+        duration: TimeInterval,
+        distance: Double,
+        avgSpeed: Double
+    ) {
+        self.duration = duration
+        self.distance = distance
+        self.avgSpeed = avgSpeed
+    }
+}
+
 /// GPS 신호 상태
 public enum GPSStatus: String, Equatable {
     case good
@@ -14,7 +30,7 @@ public enum GPSStatus: String, Equatable {
     case none
 }
 
-/// 투어 기록 DTO
+// 투어 기록 DTO
 public struct TourRecordDTO: Identifiable, Codable {
     public let id: UUID
     public let duration: TimeInterval
@@ -52,12 +68,12 @@ public struct TourRecordDTO: Identifiable, Codable {
     }
 }
 
-/// 투어 이벤트 DTO
+// 투어 이벤트 DTO
 public struct TourEventDTO: Identifiable, Codable {
     public let id: UUID
     public let type: String // RawValue of TourEventType
     
-    public let startTime: Date
+    public let startTime: Date?
     public let endTime: Date?
     
     public let startSpeed: Double
@@ -71,13 +87,13 @@ public struct TourEventDTO: Identifiable, Codable {
     public init(
         id: UUID = UUID(),
         type: String,
-        startTime: Date,
-        endTime: Date? = nil,
+        startTime: Date?,
+        endTime: Date?,
         startSpeed: Double,
-        endSpeed: Double? = nil,
+        endSpeed: Double?,
         latitude: Double,
         longitude: Double,
-        leanAngle: Double? = nil
+        leanAngle: Double?
     ) {
         self.id = id
         self.type = type
@@ -91,7 +107,7 @@ public struct TourEventDTO: Identifiable, Codable {
     }
 }
 
-/// 위치 정보 DTO
+// 위치 정보 DTO
 public struct LocationPointDTO: Identifiable, Codable {
     public let id: UUID
     public let latitude: Double

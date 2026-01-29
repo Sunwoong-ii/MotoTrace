@@ -11,8 +11,8 @@ public protocol TrackingAnalyzerInterface {
     func startTour(tourId: UUID)
     func finishTour() async throws
     
-    func updateSpeed(_ data: LocationSnapshot, location: Location) async throws -> [TrackingEvent]
-    func updateAttitude(_ data: MotionSnapshot) async throws -> [TrackingEvent]
+    func updateSpeed(_ data: LocationSnapshot) async throws -> TrackingEvent?
+    func updateAttitude(_ data: MotionSnapshot) async throws -> TrackingEvent?
     func updateAcceleration(_ data: MotionSnapshot)
     
     func recordLocation(_ data: LocationSnapshot) async throws
