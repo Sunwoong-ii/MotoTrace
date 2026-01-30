@@ -23,12 +23,12 @@ public struct TourState {
     public var liveStats: LiveStats
     
     public init(
-        trackingStatus: TrackingStatus,
-        gpsStatus: String,
+        trackingStatus: TrackingStatus = .idle,
+        gpsStatus: String = "GPS 대기 중",
         topSpeed: String = "0",
-        topLeanAngle: String,
-        cameraPosition: MapCameraPosition,
-        liveStats: LiveStats
+        topLeanAngle: String = "0",
+        cameraPosition: MapCameraPosition = .automatic,
+        liveStats: LiveStats = LiveStats()
     ) {
         self.trackingStatus = trackingStatus
         self.gpsStatus = gpsStatus
@@ -40,22 +40,27 @@ public struct TourState {
 }
 
 public struct LiveStats {
-    public let speed: String
-    public let leanAngle: String
-    public let location: Location
-    public let distance: String
-    public let duration: String
+    public let speed: String          // 현재 속도 (live)
+    public let leanAngle: String      // 현재 뱅킹각 (live)
+    public let location: Location     // 현재 위치
+    public let distance: String       // 총 거리
+    public let duration: String       // 총 시간
+    public let avgSpeed: String       // 평균 속도
     
-    public init(speed: String,
-                leanAngle: String,
-                location: Location,
-                distance: String,
-                duration: String) {
+    public init(
+        speed: String = "0",
+        leanAngle: String = "0",
+        location: Location = Location(latitude: 0, longitude: 0, timestamp: Date()),
+        distance: String = "0.0",
+        duration: String = "00:00:00",
+        avgSpeed: String = "0"
+    ) {
         self.speed = speed
         self.leanAngle = leanAngle
         self.location = location
         self.distance = distance
         self.duration = duration
+        self.avgSpeed = avgSpeed
     }
 }
 
