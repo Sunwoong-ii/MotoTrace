@@ -72,7 +72,7 @@ private extension TourStore {
         statsUpdateTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
-                await self?.updateStats()
+                self?.updateStats()
             }
         }
         
@@ -90,26 +90,18 @@ private extension TourStore {
                 } else {
                     state.gpsStatus = "GPS 약함"
                 }
-                
-//                let trackingData = TrackingSpeedData(
-//                    timestamp: location.timestamp,
-//                    latitude: location.latitude,
-//                    longitude: location.longitude,
-//                    speed: location.speedKmh
-//                )
-                
-                // Record location (saves to repository)
-//                try? await analyzer.recordLocation(trackingData)
-                
-                // Update speed and get events (saves events to repository)
+
                 let locationModel = Location(
                     latitude: location.latitude,
                     longitude: location.longitude,
                     timestamp: location.timestamp
                 )
                 let speedEvents = try? await analyzer.updateSpeed(
-                    SpeedData(timestamp: location.timestamp, speedKmh: location.speedKmh),
-                    location: locationModel
+                    LocationSnapshot(
+                        timestamp: location.timestamp,
+                        speedKmh: location.speedKmh,
+                        location: locationModel
+                    )
                 )
                 
                 // Update live stats in state
@@ -129,8 +121,9 @@ private extension TourStore {
         
         motionTask = Task { [weak self] in
             guard let self else { return }
+            
             for await motion in sensors.motionStream() {
-                let attitudeData = TrackingAttitudeData(
+                let motionSnapshot = MotionSnapshot(
                     timestamp: motion.timestamp,
                     rollDegrees: motion.rollDegrees,
                     pitchDegrees: motion.pitchDegrees,
@@ -139,10 +132,9 @@ private extension TourStore {
                     userAccelerationZ: motion.userAccelerationZ
                 )
                 
-                analyzer.updateAcceleration(data: attitudeData)
                 
                 // Update attitude and get lean angle events (saves to repository)
-                let events = try? await analyzer.updateAttitude(attitudeData)
+                let events = try? await analyzer.updateAttitude(motionSnapshot)
                 
                 // Update live lean angle in state
                 state.liveStats = LiveStats(

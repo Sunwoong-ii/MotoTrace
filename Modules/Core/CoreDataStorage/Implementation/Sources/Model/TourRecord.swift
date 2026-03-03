@@ -13,7 +13,7 @@ import CoreLocation
 @Model
 public final class TourRecord {
     /// 고유 식별자
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique) public var id: UUID
     
     /// 투어 총 시간 (초)
     var duration: TimeInterval
@@ -70,7 +70,7 @@ public final class TourRecord {
 /// 위치 정보 모델 (TourRecord의 하위)
 @Model
 public final class LocationPoint {
-    @Attribute(.unique) var id: UUID
+    @Attribute(.unique) public var id: UUID
     var latitude: Double
     var longitude: Double
     var timestamp: Date

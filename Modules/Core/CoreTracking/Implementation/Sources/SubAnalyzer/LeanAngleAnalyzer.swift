@@ -24,6 +24,7 @@ final class LeanAnalyzer {
     private var leanZeroPitch: Double = 0
     
     private var topLeanAngleDegrees: Double = 0
+    private var currentLeanAngleDegrees: Double = 0
     
     init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
@@ -34,7 +35,7 @@ final class LeanAnalyzer {
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
         
-        var result = LeanAnalyzerResult()
+        var result = LeanAnalyzerResult(currentAngle: lean)
         if abs(lean) > abs(topLeanAngleDegrees) {
             topLeanAngleDegrees = lean
             result.maxLeanAngleUpdated = lean
@@ -66,10 +67,15 @@ final class LeanAnalyzer {
         leanZeroRoll = 0
         leanZeroPitch = 0
         topLeanAngleDegrees = 0
+        currentLeanAngleDegrees = 0
     }
     
     // MARK: - Getters
 
+    func currentLeanAngle() -> Double {
+        currentLeanAngleDegrees
+    }
+    
     func topLeanAngle() -> Double {
         topLeanAngleDegrees
     }

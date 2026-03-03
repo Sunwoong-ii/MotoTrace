@@ -11,6 +11,16 @@ public struct LocationSnapshot: Codable {
     public let timestamp: Date
     public let speedKmh: Double
     public let location: Location
+    
+    public init(
+        timestamp: Date,
+        speedKmh: Double,
+        location: Location
+    ) {
+        self.timestamp = timestamp
+        self.speedKmh = speedKmh
+        self.location = location
+    }
 }
 
 public struct MotionSnapshot: Codable {

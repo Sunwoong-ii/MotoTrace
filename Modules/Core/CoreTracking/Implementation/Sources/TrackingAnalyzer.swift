@@ -107,6 +107,9 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
         leanAnalyzer.topLeanAngle()
     }
     
+    func currentLeanAngle() -> Double {
+        leanAnalyzer.currentLeanAngle()
+    }
 }
 
 private extension TrackingAnalyzer {
