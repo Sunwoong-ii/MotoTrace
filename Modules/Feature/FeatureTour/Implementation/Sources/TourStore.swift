@@ -1,4 +1,4 @@
-//  RidingStore.swift
+//  TourStore.swift
 //  MotoTrace
 //
 //  Created by Woong on 2026/01/21.
@@ -63,7 +63,7 @@ private extension TourStore {
             try? await repository.createTour(tourDTO)
         }
         
-        analyzer.startTour(tourId: tourId)
+        analyzer.reset()
         
         sensors.requestWhenInUseAuthorization()
         sensors.start()
@@ -72,7 +72,7 @@ private extension TourStore {
         statsUpdateTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
-                self?.updateStats()
+                await self?.updateStats()
             }
         }
         
@@ -90,24 +90,33 @@ private extension TourStore {
                 } else {
                     state.gpsStatus = "GPS 약함"
                 }
-
+                
                 let locationModel = Location(
                     latitude: location.latitude,
                     longitude: location.longitude,
                     timestamp: location.timestamp
                 )
-                let speedEvents = try? await analyzer.updateSpeed(
-                    LocationSnapshot(
-                        timestamp: location.timestamp,
-                        speedKmh: location.speedKmh,
-                        location: locationModel
-                    )
+                
+                let snapshot = LocationSnapshot(
+                    timestamp: location.timestamp,
+                    speedKmh: location.speedKmh,
+                    location: locationModel
                 )
+                
+                // Analyzer에 위치 갱신 (린앵글 참조용)
+                analyzer.updateLocation(snapshot)
+                
+                // 속도 분석 (결과만 반환)
+                let speedResult = analyzer.updateSpeed(snapshot)
+                
+                // Repository 저장 (Store가 전담)
+                await saveSpeedResult(speedResult, tourId: tourId)
+                await saveLocation(snapshot, tourId: tourId)
                 
                 // Update live stats in state
                 state.liveStats = LiveStats(
                     speed: String(format: "%.0f", analyzer.currentSpeed()),
-                    leanAngle: String(format: "%.1f", analyzer.currentLeanAngle()),
+                    leanAngle: state.liveStats.leanAngle,
                     location: locationModel,
                     distance: state.liveStats.distance,
                     duration: state.liveStats.duration,
@@ -121,9 +130,8 @@ private extension TourStore {
         
         motionTask = Task { [weak self] in
             guard let self else { return }
-            
             for await motion in sensors.motionStream() {
-                let motionSnapshot = MotionSnapshot(
+                let attitudeData = MotionSnapshot(
                     timestamp: motion.timestamp,
                     rollDegrees: motion.rollDegrees,
                     pitchDegrees: motion.pitchDegrees,
@@ -132,19 +140,13 @@ private extension TourStore {
                     userAccelerationZ: motion.userAccelerationZ
                 )
                 
+                analyzer.updateAcceleration(attitudeData)
                 
-                // Update attitude and get lean angle events (saves to repository)
-                let events = try? await analyzer.updateAttitude(motionSnapshot)
+                // 자세 분석 (결과만 반환)
+                let leanResult = analyzer.updateAttitude(attitudeData)
                 
-                // Update live lean angle in state
-                state.liveStats = LiveStats(
-                    speed: state.liveStats.speed,
-                    leanAngle: String(format: "%.1f", analyzer.currentLeanAngle()),
-                    location: state.liveStats.location,
-                    distance: state.liveStats.distance,
-                    duration: state.liveStats.duration,
-                    avgSpeed: state.liveStats.avgSpeed
-                )
+                // Repository 저장 (Store가 전담)
+                await saveLeanResult(leanResult, tourId: tourId)
                 
                 // Update top lean angle
                 state.topLeanAngle = String(format: "%.1f", abs(analyzer.topLeanAngle()))
@@ -164,29 +166,29 @@ private extension TourStore {
         motionTask = nil
         statsUpdateTask = nil
         
-        // Finish tour
+        // Finish tour — 최종 통계 저장
         Task {
-            try? await analyzer.finishTour()
+            guard let tourId = currentTourId else { return }
             
-            // Update final stats
-            if let tourId = currentTourId {
-                let stats = analyzer.stats()
-                try? await repository.updateTourStats(
-                    id: tourId,
+            let stats = analyzer.stats()
+            try? await repository.updateTripStats(
+                id: tourId,
+                tripStats: TripStats(
                     duration: stats.movingTimeSeconds,
                     distance: stats.movingDistanceKm,
-                    avgSpeed: stats.averageSpeedKmh,
-                    topSpeed: analyzer.topSpeed(),
-                    maxLeanAngle: abs(analyzer.topLeanAngle())
+                    avgSpeed: stats.averageSpeedKmh
                 )
-            }
+            )
+            try? await repository.updateTopSpeed(id: tourId, speed: analyzer.topSpeed())
+            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
+            try? await repository.finishTour(id: tourId)
             
             currentTourId = nil
         }
     }
     
     func updateStats() {
-        guard currentTourId != nil else { return }
+        guard let tourId = currentTourId else { return }
         
         let stats = analyzer.stats()
         
@@ -207,17 +209,60 @@ private extension TourStore {
         )
         
         // Update repository periodically
-        if let tourId = currentTourId {
-            Task {
-                try? await repository.updateTourStats(
-                    id: tourId,
+        Task {
+            try? await repository.updateTripStats(
+                id: tourId,
+                tripStats: TripStats(
                     duration: stats.movingTimeSeconds,
                     distance: stats.movingDistanceKm,
-                    avgSpeed: stats.averageSpeedKmh,
-                    topSpeed: analyzer.topSpeed(),
-                    maxLeanAngle: abs(analyzer.topLeanAngle())
+                    avgSpeed: stats.averageSpeedKmh
                 )
-            }
+            )
         }
+    }
+    
+    // MARK: - Repository Save Helpers
+    
+    func saveSpeedResult(_ result: SpeedAnalyzerResult, tourId: UUID) async {
+        if let topSpeed = result.topSpeedUpdated {
+            try? await repository.updateTopSpeed(id: tourId, speed: topSpeed)
+        }
+        
+        if let event = result.event {
+            try? await repository.addEvent(toEventDTO(event), to: tourId)
+        }
+    }
+    
+    func saveLeanResult(_ result: LeanAnalyzerResult, tourId: UUID) async {
+        if let maxLean = result.maxLeanAngleUpdated {
+            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: maxLean)
+        }
+        
+        if let event = result.event {
+            try? await repository.addEvent(toEventDTO(event), to: tourId)
+        }
+    }
+    
+    func saveLocation(_ data: LocationSnapshot, tourId: UUID) async {
+        let locationDTO = LocationPointDTO(
+            latitude: data.location.latitude,
+            longitude: data.location.longitude,
+            timestamp: data.location.timestamp,
+            speed: data.speedKmh
+        )
+        try? await repository.addLocation(locationDTO, to: tourId)
+    }
+    
+    func toEventDTO(_ event: TrackingEvent) -> TourEventDTO {
+        TourEventDTO(
+            type: event.type.rawValue,
+            startTime: event.startTimestamp,
+            endTime: event.endTimestamp,
+            startSpeed: event.startSpeedKmh,
+            endSpeed: event.endSpeedKmh,
+            latitude: event.location.latitude,
+            longitude: event.location.longitude,
+            leanAngle: event.leanAngle
+        )
     }
 }

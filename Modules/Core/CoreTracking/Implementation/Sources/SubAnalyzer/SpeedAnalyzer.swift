@@ -7,16 +7,7 @@
 import Foundation
 import CoreTrackingInterface
 
-struct SpeedAnalyzerResult {
-    var topSpeedUpdated: Double?
-    var event: TrackingEvent?
-    
-    init(maxSpeedUpdated: Double? = nil,
-         event: TrackingEvent? = nil) {
-        self.topSpeedUpdated = maxSpeedUpdated
-        self.event = event
-    }
-}
+
 
 final class SpeedAnalyzer {
     
@@ -54,17 +45,21 @@ final class SpeedAnalyzer {
             }
         }
         
-        var result = SpeedAnalyzerResult()
+        var topSpeedUpdate: Double?
         
         currentSpeedKmh = currentSnapshot.speedKmh
         if currentSnapshot.speedKmh > topSpeedKmh {
             topSpeedKmh = currentSnapshot.speedKmh
-            result.topSpeedUpdated = topSpeedKmh
+            topSpeedUpdate = topSpeedKmh
         }
         
-        guard let prevSnapshot = recentSnapshots.first else { return result }
+        guard let prevSnapshot = recentSnapshots.first else {
+            return SpeedAnalyzerResult(topSpeedUpdated: topSpeedUpdate)
+        }
         let deltaTime = currentSnapshot.location.timestamp.timeIntervalSince(prevSnapshot.timestamp)
-        guard deltaTime > 0 else { return result }
+        guard deltaTime > 0 else {
+            return SpeedAnalyzerResult(topSpeedUpdated: topSpeedUpdate)
+        }
         
         let accel = calculateAcceleration(
             current: currentSnapshot,
@@ -72,7 +67,7 @@ final class SpeedAnalyzer {
             deltaTime: deltaTime
         )
         
-        result.event = processSpeedEvents(
+        let event = processSpeedEvents(
             accel: accel,
             current: currentSnapshot,
             previous: prevSnapshot,
@@ -81,7 +76,7 @@ final class SpeedAnalyzer {
         
         updateMovingStats(speed: currentSnapshot.speedKmh, deltaTime: deltaTime)
         
-        return result
+        return SpeedAnalyzerResult(topSpeedUpdated: topSpeedUpdate, event: event)
     }
     
     // MARK: - Private Helper Methods

@@ -7,16 +7,7 @@
 import Foundation
 import CoreTrackingInterface
 
-struct LeanAnalyzerResult {
-    var maxLeanAngleUpdated: Double?
-    var event: TrackingEvent?
-    
-    init(maxLeanAngleUpdated: Double? = nil,
-         event: TrackingEvent? = nil) {
-        self.maxLeanAngleUpdated = maxLeanAngleUpdated
-        self.event = event
-    }
-}
+
 
 final class LeanAnalyzer {
     private var thresholds: TrackingThresholds
@@ -35,7 +26,7 @@ final class LeanAnalyzer {
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
         
-        var result = LeanAnalyzerResult(currentAngle: lean)
+        var result = LeanAnalyzerResult()
         if abs(lean) > abs(topLeanAngleDegrees) {
             topLeanAngleDegrees = lean
             result.maxLeanAngleUpdated = lean

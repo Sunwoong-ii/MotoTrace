@@ -154,3 +154,25 @@ public struct Location: Codable {
         self.timestamp = timestamp
     }
 }
+
+// MARK: - Analyzer Results
+
+public struct SpeedAnalyzerResult {
+    public let topSpeedUpdated: Double?
+    public let event: TrackingEvent?
+    
+    public init(topSpeedUpdated: Double? = nil, event: TrackingEvent? = nil) {
+        self.topSpeedUpdated = topSpeedUpdated
+        self.event = event
+    }
+}
+
+public struct LeanAnalyzerResult {
+    public var maxLeanAngleUpdated: Double?
+    public var event: TrackingEvent?
+    
+    public init(maxLeanAngleUpdated: Double? = nil, event: TrackingEvent? = nil) {
+        self.maxLeanAngleUpdated = maxLeanAngleUpdated
+        self.event = event
+    }
+}
