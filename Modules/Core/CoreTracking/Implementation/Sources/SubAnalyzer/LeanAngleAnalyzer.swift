@@ -7,8 +7,6 @@
 import Foundation
 import CoreTrackingInterface
 
-
-
 final class LeanAnalyzer {
     private var thresholds: TrackingThresholds
     private var leanZeroRoll: Double = 0

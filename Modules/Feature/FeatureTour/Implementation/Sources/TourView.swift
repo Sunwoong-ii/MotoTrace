@@ -1,5 +1,6 @@
-//  RidingStore.swift
-//  MotoTrace
+//
+//  TourView.swift
+//  FeatureTour
 //
 //  Created by Woong on 2026/01/21.
 //
@@ -8,23 +9,21 @@ import SwiftUI
 import MapKit
 import FeatureTourInterface
 import CoreLocation
+import CoreTrackingInterface
 
 /// 라이딩 트래킹 화면
 internal struct TourView: View {
     @StateObject private var store: TourStore
-    private let routeCoordinates: [CLLocationCoordinate2D]
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
-        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-    )
     @State private var cameraPosition: MapCameraPosition
+    @State private var showNameInput = false
+    @State private var tourNameInput = ""
     
-    internal init(
-        store: TourStore,
-        routeCoordinates: [CLLocationCoordinate2D] = []
-    ) {
+    private var isTracking: Bool {
+        store.state.trackingStatus == .tracking
+    }
+    
+    internal init(store: TourStore) {
         _store = StateObject(wrappedValue: store)
-        self.routeCoordinates = routeCoordinates
         _cameraPosition = State(initialValue: .region(
             MKCoordinateRegion(
                 center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
@@ -34,59 +33,172 @@ internal struct TourView: View {
     }
     
     internal var body: some View {
-        Map(position: $cameraPosition) {
-            Marker("Start", coordinate: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780))
-            if !routeCoordinates.isEmpty {
-                MapPolyline(coordinates: routeCoordinates)
-                    .stroke(.blue, lineWidth: 4)
+        VStack(spacing: 0) {
+            if isTracking {
+                topBar
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
             }
-        }
-        .overlay(alignment: .topTrailing) {
-            VStack(spacing: 8) {
-                Button(action: zoomIn) {
-                    Image(systemName: "plus.magnifyingglass")
-                        .padding(8)
+            
+            HStack(alignment: .top) {
+                if isTracking {
+                    gauges
+                        .padding(.leading, 16)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
-                Button(action: zoomOut) {
-                    Image(systemName: "minus.magnifyingglass")
-                        .padding(8)
-                }
+                Spacer()
+                mapControls
+                    .padding(.trailing, 16)
             }
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .padding(12)
+            .padding(.top, 8)
+            
+            Spacer()
+            
+            bottomContent
         }
-        .overlay(alignment: .bottom) {
-            TourStatView()
-                .frame(height: 250)
-                .padding([.horizontal, .bottom], 10)
-                
-                
+        // Map을 background로 — safe area 무시하여 전체 화면 채움
+        .background {
+            Map(position: $cameraPosition) {
+                UserAnnotation()
+            }
+            .mapStyle(.standard)
+            .mapControls { }
+            .ignoresSafeArea()
         }
-        .onAppear { store.send(.startTracking) }
-        .onDisappear { store.send(.stopTracking) }
+        .animation(.easeInOut(duration: 0.35), value: isTracking)
+        .alert("투어 이름", isPresented: $showNameInput) {
+            TextField("예: 북한산 라이딩", text: $tourNameInput)
+            Button("시작") {
+                let name = tourNameInput.trimmingCharacters(in: .whitespaces)
+                let finalName = name.isEmpty
+                    ? "투어 \(Date().formatted(date: .abbreviated, time: .shortened))"
+                    : name
+                store.send(.startTracking(tourName: finalName))
+                tourNameInput = ""
+            }
+            Button("취소", role: .cancel) {
+                tourNameInput = ""
+            }
+        } message: {
+            Text("기록할 투어의 이름을 입력하세요")
+        }
     }
 }
+
+// MARK: - Top Bar
 
 private extension TourView {
-    func zoomIn() {
-        let minSpan = 0.001
-        let zoomInFactor = 0.6
-        region.span = MKCoordinateSpan(
-            latitudeDelta: max(region.span.latitudeDelta * zoomInFactor, minSpan),
-            longitudeDelta: max(region.span.longitudeDelta * zoomInFactor, minSpan)
-        )
-        cameraPosition = .region(region)
+    var topBar: some View {
+        HStack {
+            Spacer()
+//            Button {
+//                // TODO: Navigation back
+//            } label: {
+//                Image(systemName: "chevron.left")
+//                    .font(.system(size: 16, weight: .semibold))
+//                    .foregroundStyle(TourDesign.textPrimary)
+//                    .frame(width: 40, height: 40)
+//                    .background(.ultraThinMaterial)
+//                    .clipShape(Circle())
+//            }
+//            
+//            Spacer()
+            
+            VStack(spacing: 4) {
+                Text(store.state.tourName)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(TourDesign.textPrimary)
+                
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(gpsColor)
+                        .frame(width: 7, height: 7)
+                    Text(store.state.gpsStatus)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(TourDesign.textSecondary)
+                        .textCase(.uppercase)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 3)
+                .background(Capsule().fill(.ultraThinMaterial))
+            }
+            
+            Spacer()
+        }
     }
     
-    func zoomOut() {
-        let maxSpan = 10.0
-        let zoomOutFactor = 1.6
-        region.span = MKCoordinateSpan(
-            latitudeDelta: min(region.span.latitudeDelta * zoomOutFactor, maxSpan),
-            longitudeDelta: min(region.span.longitudeDelta * zoomOutFactor, maxSpan)
-        )
-        cameraPosition = .region(region)
+    var gpsColor: Color {
+        switch store.state.gpsStatus {
+        case "GPS 양호": TourDesign.gpsGreen
+        case "GPS 보통": .orange
+        case "GPS 약함": .red
+        default: TourDesign.textSecondary
+        }
     }
 }
 
+// MARK: - Right Map Controls
+
+private extension TourView {
+    var mapControls: some View {
+//        VStack(spacing: 1) {
+//            mapControlButton(icon: "square.3.layers.3d") { }
+//            Divider().frame(width: 40)
+//            mapControlButton(icon: "location.fill") { }
+//            Divider().frame(width: 40)
+//        }
+        mapControlButton(icon: "location.north.fill") { }
+        .background(.ultraThickMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+    }
+    
+    func mapControlButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(TourDesign.textPrimary)
+                .frame(width: 44, height: 44)
+        }
+    }
+}
+
+// MARK: - Left Gauges (Tracking)
+
+private extension TourView {
+    var gauges: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SpeedGaugeView(speed: store.state.liveStats.speed, maxSpeed: 200)
+            LeanAngleView(angle: store.state.liveStats.leanAngle)
+        }
+    }
+}
+
+// MARK: - Bottom
+
+private extension TourView {
+    var bottomContent: some View {
+        Group {
+            if isTracking {
+                TourStatView(
+                    duration: store.state.liveStats.duration,
+                    distance: store.state.liveStats.distance,
+                    avgSpeed: store.state.liveStats.avgSpeed,
+                    topSpeed: store.state.topSpeed,
+                    topLeanAngle: store.state.topLeanAngle,
+                    onPause: { store.send(.stopTracking) }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 16)
+            } else {
+                TrackingButton(status: .idle) {
+                    showNameInput = true
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+    }
+}

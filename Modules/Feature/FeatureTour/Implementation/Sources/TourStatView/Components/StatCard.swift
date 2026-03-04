@@ -2,34 +2,41 @@
 //  StatCard.swift
 //  FeatureTour
 //
-//  Created by 웅 on 1/26/26.
+//  TOP Speed / MAX Lean Angle 카드
 //
 
 import SwiftUI
 
 struct StatCard: View {
     enum StatCardType {
-        case leanAngle
         case topSpeed
+        case leanAngle
         
-        var image: String {
+        var icon: String {
             switch self {
-            case .leanAngle: "angle"
-            case .topSpeed: "motorcycle"
+            case .topSpeed: "speedometer"
+            case .leanAngle: "figure.outdoor.cycle"
             }
         }
         
         var title: String {
             switch self {
-            case .leanAngle: "Lean Angle"
-            case .topSpeed: "Top Speed"
+            case .topSpeed: "TOP"
+            case .leanAngle: "MAX"
             }
         }
         
         var suffix: String {
             switch self {
-            case .leanAngle: "°"
             case .topSpeed: ""
+            case .leanAngle: "°"
+            }
+        }
+        
+        var accentColor: Color {
+            switch self {
+            case .topSpeed: TourDesign.primaryBlue
+            case .leanAngle: TourDesign.accentOrange
             }
         }
     }
@@ -38,24 +45,33 @@ struct StatCard: View {
     let value: String
     
     var body: some View {
-        VStack(spacing: 10) {
-            Spacer()
-            
-            Image(systemName: type.image)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
+        VStack(spacing: 6) {
+            Image(systemName: type.icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(type.accentColor)
             
             Text(type.title)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(size: 9, weight: .heavy))
+                .foregroundStyle(type.accentColor)
+                .tracking(0.8)
             
             Text(value + type.suffix)
-                .font(.title3)
-                .fontWeight(.bold)
-            
-            Spacer()
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundStyle(TourDesign.textPrimary)
         }
-        .frame(width: 70, height: 80)
+        .frame(width: 72, height: 80)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(type.accentColor.opacity(0.25), lineWidth: 1.5)
+                .fill(type.accentColor.opacity(0.04))
+        )
     }
+}
+
+#Preview {
+    HStack(spacing: 12) {
+        StatCard(type: .topSpeed, value: "142")
+        StatCard(type: .leanAngle, value: "49")
+    }
+    .padding()
 }

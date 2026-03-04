@@ -26,6 +26,7 @@ public protocol TrackingAnalyzerInterface {
     
     // MARK: - Real-time Data Getters
     func currentSpeed() -> Double
+    func currentLeanAngle() -> Double
     func topSpeed() -> Double
     func topLeanAngle() -> Double
 }

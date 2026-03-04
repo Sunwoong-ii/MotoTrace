@@ -8,9 +8,7 @@ struct MotoTraceApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
-            // Feature에서 container를 받아 resolve 사용:
-            // let sensors = setup.container.resolve(CoreSensorsInterface.self)
+            RootTabView(container: setup.container)
         }
         .modelContainer(setup.modelContainer)
     }

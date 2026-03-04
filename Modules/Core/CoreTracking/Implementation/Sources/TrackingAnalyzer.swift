@@ -70,6 +70,10 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
         speedAnalyzer.currentSpeed()
     }
     
+    func currentLeanAngle() -> Double {
+        leanAnalyzer.currentLeanAngle()
+    }
+    
     func topSpeed() -> Double {
         speedAnalyzer.topSpeed()
     }

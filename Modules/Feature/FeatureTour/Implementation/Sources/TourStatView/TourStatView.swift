@@ -2,41 +2,76 @@
 //  TourStatView.swift
 //  FeatureTour
 //
-//  Created by 웅 on 1/26/26.
+//  하단 통계 패널 (트래킹 중 표시)
 //
 
 import SwiftUI
 import FeatureTourInterface
 
 struct TourStatView: View {
+    let duration: String
+    let distance: String
+    let avgSpeed: String
+    let topSpeed: String
+    let topLeanAngle: String
+    let onPause: () -> Void
+    
     var body: some View {
-        VStack(spacing: 20) {
-            HStack(spacing: 30) {
-                StatLabel(type: .duration, value: "1h 24m")
-                StatLabel(type: .distance, value: "4.25 km")
+        VStack(spacing: 16) {
+            // 드래그 핸들
+            Capsule()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+            
+            // DURATION / DISTANCE
+            HStack(spacing: 32) {
+                StatLabel(type: .duration, value: duration)
+                StatLabel(type: .distance, value: distance)
                 Spacer()
             }
             
-            HStack {
-                SpeedAVGLabel(value: "85")
+            // AVG SPEED + TOP / MAX 카드
+            HStack(alignment: .bottom) {
+                SpeedAVGLabel(value: avgSpeed)
                 
-                Color.clear
-                    .frame(maxWidth: 40)
+                Spacer()
                 
-                StatCard(type: .topSpeed, value: "142")
-                StatCard(type: .leanAngle, value: "49")
+                HStack(spacing: 8) {
+                    StatCard(type: .topSpeed, value: topSpeed)
+                    StatCard(type: .leanAngle, value: topLeanAngle)
+                }
             }
             
-            TrackingButton(status: .idle)
+            // PAUSE 버튼
+            TrackingButton(status: .tracking, action: onPause)
+                .padding(.top, 4)
         }
-        .padding(20)
-        .background(Color.white)
-        .shadow(radius: 5)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .background(
+            TourDesign.cardBackground
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.1), radius: 20, y: -4)
+        )
     }
 }
 
 #Preview {
-    TourStatView()
-        .frame(width: 350, height: 250)
+    ZStack {
+        Color.gray.opacity(0.3)
+            .ignoresSafeArea()
+        
+        VStack {
+            Spacer()
+            TourStatView(
+                duration: "1h 24m",
+                distance: "42.5",
+                avgSpeed: "85",
+                topSpeed: "142",
+                topLeanAngle: "49",
+                onPause: {}
+            )
+        }
+    }
 }

@@ -2,7 +2,7 @@
 //  StatLabel.swift
 //  FeatureTour
 //
-//  Created by 웅 on 1/26/26.
+//  DURATION / DISTANCE 레이블
 //
 
 import SwiftUI
@@ -14,8 +14,15 @@ struct StatLabel: View {
         
         var title: String {
             switch self {
-            case .duration: "Duration"
-            case .distance: "Distance"
+            case .duration: "DURATION"
+            case .distance: "DISTANCE"
+            }
+        }
+        
+        var suffix: String {
+            switch self {
+            case .duration: ""
+            case .distance: " km"
             }
         }
     }
@@ -24,16 +31,31 @@ struct StatLabel: View {
     let value: String
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(type.title)
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(TourDesign.labelGray)
+                .tracking(0.8)
             
-            Text(value)
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundStyle(.primary)
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(TourDesign.textPrimary)
+                
+                if !type.suffix.isEmpty {
+                    Text(type.suffix)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(TourDesign.labelGray)
+                }
+            }
         }
     }
+}
+
+#Preview {
+    HStack(spacing: 30) {
+        StatLabel(type: .duration, value: "1h 24m")
+        StatLabel(type: .distance, value: "42.5")
+    }
+    .padding()
 }

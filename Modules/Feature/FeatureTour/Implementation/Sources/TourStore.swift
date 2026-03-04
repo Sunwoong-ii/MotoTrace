@@ -37,8 +37,8 @@ internal final class TourStore: ObservableObject {
     
     internal func send(_ intent: TourIntent) {
         switch intent {
-        case .startTracking:
-            startTracking()
+        case .startTracking(let tourName):
+            startTracking(tourName: tourName)
         case .stopTracking:
             stopTracking()
         }
@@ -46,9 +46,10 @@ internal final class TourStore: ObservableObject {
 }
 
 private extension TourStore {
-    func startTracking() {
+    func startTracking(tourName: String) {
         guard locationTask == nil, motionTask == nil else { return }
         state.trackingStatus = .tracking
+        state.tourName = tourName
         
         // Create new tour
         let tourId = UUID()
@@ -56,7 +57,7 @@ private extension TourStore {
         
         let tourDTO = TourRecordDTO(
             id: tourId,
-            tourName: "투어 \(Date().formatted(date: .abbreviated, time: .shortened))"
+            tourName: tourName
         )
         
         Task {
@@ -113,8 +114,8 @@ private extension TourStore {
                 await saveSpeedResult(speedResult, tourId: tourId)
                 await saveLocation(snapshot, tourId: tourId)
                 
-                // Update live stats in state
-                state.liveStats = LiveStats(
+                
+                let stat = LiveStats(
                     speed: String(format: "%.0f", analyzer.currentSpeed()),
                     leanAngle: state.liveStats.leanAngle,
                     location: locationModel,
@@ -122,6 +123,10 @@ private extension TourStore {
                     duration: state.liveStats.duration,
                     avgSpeed: state.liveStats.avgSpeed
                 )
+                
+                state.liveStats = stat
+                
+                print("stat:: \(stat)")
                 
                 // Update top speed
                 state.topSpeed = String(format: "%.0f", analyzer.topSpeed())
@@ -148,6 +153,15 @@ private extension TourStore {
                 // Repository 저장 (Store가 전담)
                 await saveLeanResult(leanResult, tourId: tourId)
                 
+                let stat = LiveStats(
+                    speed: state.liveStats.speed,
+                    leanAngle: "\(analyzer.currentLeanAngle())",
+                    location: state.liveStats.location,
+                    distance: state.liveStats.distance,
+                    duration: state.liveStats.duration,
+                    avgSpeed: state.liveStats.avgSpeed
+                )
+                state.liveStats = stat
                 // Update top lean angle
                 state.topLeanAngle = String(format: "%.1f", abs(analyzer.topLeanAngle()))
             }

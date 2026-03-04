@@ -11,7 +11,7 @@ let project = Project(
     targets: [
         .target(
             name: appName,
-            destinations: .iOS,
+            destinations: BuildSettings.destinations,
             product: .app,
             bundleId: bundleId,
             deploymentTargets: BuildSettings.deploymentTargets,
@@ -24,7 +24,7 @@ let project = Project(
         ),
         .target(
             name: "\(appName)Tests",
-            destinations: .iOS,
+            destinations: BuildSettings.destinations,
             product: .unitTests,
             bundleId: "\(bundleId)Tests",
             deploymentTargets: BuildSettings.deploymentTargets,

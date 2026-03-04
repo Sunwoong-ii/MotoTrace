@@ -8,6 +8,6 @@ import Foundation
 
 /// 라이딩 Feature의 Intent (MVI 패턴)
 public enum TourIntent {
-    case startTracking
+    case startTracking(tourName: String)
     case stopTracking
 }
