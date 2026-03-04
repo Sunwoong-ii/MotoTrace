@@ -10,7 +10,7 @@ public extension Project {
             targets: [
                 .target(
                     name: name,
-                    destinations: .iOS,
+                    destinations: BuildSettings.destinations,
                     product: .staticFramework,
                     bundleId: "\(BuildSettings.bundleIdPrefix).\(name)",
                     deploymentTargets: BuildSettings.deploymentTargets,
@@ -53,7 +53,7 @@ public extension Project {
             demoTargets = [
                 .target(
                     name: "\(name)Demo",
-                    destinations: .iOS,
+                    destinations: BuildSettings.destinations,
                     product: .app,
                     bundleId: "\(BuildSettings.bundleIdPrefix).\(name)Demo",
                     deploymentTargets: BuildSettings.deploymentTargets,
@@ -95,7 +95,7 @@ public extension Project {
         return [
             .target(
                 name: "\(name)Interface",
-                destinations: .iOS,
+                destinations: BuildSettings.destinations,
                 product: .staticFramework,
                 bundleId: "\(BuildSettings.bundleIdPrefix).\(name)Interface",
                 deploymentTargets: BuildSettings.deploymentTargets,
@@ -104,7 +104,7 @@ public extension Project {
             ),
             .target(
                 name: name,
-                destinations: .iOS,
+                destinations: BuildSettings.destinations,
                 product: .staticFramework,
                 bundleId: "\(BuildSettings.bundleIdPrefix).\(name)",
                 deploymentTargets: BuildSettings.deploymentTargets,

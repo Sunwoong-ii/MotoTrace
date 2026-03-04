@@ -11,6 +11,7 @@ public enum AppInfoPlist {
     public static let base: [String: Plist.Value] = [
         "NSLocationWhenInUseUsageDescription": "...",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "...",
-        "NSLocationAlwaysUsageDescription": "..."
+        "NSLocationAlwaysUsageDescription": "...",
+        "UILaunchScreen": [:]
     ]
 }
