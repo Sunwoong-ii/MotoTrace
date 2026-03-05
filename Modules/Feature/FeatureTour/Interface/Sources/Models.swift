@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreTrackingInterface
 
 public struct LiveStats {
     public let speed: String          // 현재 속도 (live)

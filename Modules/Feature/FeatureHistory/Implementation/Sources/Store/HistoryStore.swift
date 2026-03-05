@@ -1,6 +1,6 @@
 //
 //  HistoryStore.swift
-//  FeatureHistoryInterface
+//  FeatureHistory
 //
 //  Created by 김선웅 on 3/5/26.
 //
@@ -9,6 +9,7 @@ import Foundation
 import FeatureHistoryInterface
 import CoreDataStorageInterface
 
+@MainActor
 final class HistoryStore: ObservableObject {
     private let repository: TourRepositoryInterface
     
@@ -30,6 +31,21 @@ final class HistoryStore: ObservableObject {
     }
     
     private func fetchTours() {
-        
+        Task {
+            do {
+                let dtos = try await repository.fetchAllTours()
+                state.tours = dtos.map { dto in
+                    HistoryRecord(
+                        id: dto.id,
+                        duration: dto.duration,
+                        distance: dto.distance,
+                        tourName: dto.tourName,
+                        createdAt: dto.createdAt
+                    )
+                }
+            } catch {
+                print("Failed to fetch tours: \(error)")
+            }
+        }
     }
 }

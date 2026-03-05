@@ -9,6 +9,7 @@ import SwiftUI
 import AppDI
 import FeatureTour
 import FeatureTourInterface
+import FeatureHistory
 
 struct RootTabView: View {
     let container: AppDIContainer
@@ -23,7 +24,7 @@ struct RootTabView: View {
             }
             
             Tab("History", systemImage: "clock.arrow.counterclockwise") {
-                Text("History")
+                HistoryFeatureAssembler.assemble(container: container)
             }
             
             Tab("Settings", systemImage: "gearshape.fill") {

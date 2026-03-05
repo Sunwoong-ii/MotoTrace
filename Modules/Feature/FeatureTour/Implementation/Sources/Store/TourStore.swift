@@ -257,7 +257,7 @@ final class TourStore: ObservableObject {
             try? await repository.updateTripStats(
                 id: tourId,
                 tripStats: TripStats(
-                    duration: stats.movingTimeSeconds,
+                    duration: elapsed,
                     distance: stats.movingDistanceKm,
                     avgSpeed: stats.averageSpeedKmh
                 )
