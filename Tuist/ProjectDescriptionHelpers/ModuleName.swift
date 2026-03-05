@@ -32,6 +32,7 @@ public enum ModuleName: String, CaseIterable {
     case featureTour = "FeatureTour"
     case featureHistory = "FeatureHistory"
     case featureSettings = "FeatureSettings"
+    case historyDetail = "HistoryDetail"
     
     public var type: ModuleType {
         switch self {
@@ -46,6 +47,7 @@ public enum ModuleName: String, CaseIterable {
         case .featureTour: .feature
         case .featureHistory: .feature
         case .featureSettings: .feature
+        case .historyDetail: .feature
         }
     }
     
