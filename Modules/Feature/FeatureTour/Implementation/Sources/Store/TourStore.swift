@@ -23,6 +23,7 @@ internal final class TourStore: ObservableObject {
     
     private var currentTourId: UUID?
     private var tourStartDate: Date?
+    private var pausedAt: Date?
     
     internal init(
         sensors: CoreSensorsInterface,
@@ -40,6 +41,10 @@ internal final class TourStore: ObservableObject {
         switch intent {
         case .startTracking(let tourName):
             startTracking(tourName: tourName)
+        case .pauseTracking:
+            pauseTracking()
+        case .resumeTracking:
+            resumeTracking()
         case .stopTracking:
             stopTracking()
         }
@@ -79,10 +84,84 @@ private extension TourStore {
             }
         }
         
+        startSensorTasks(tourId: tourId)
+    }
+    
+    func pauseTracking() {
+        state.trackingStatus = .paused
+        pausedAt = Date()
+        sensors.stop()
+        
+        locationTask?.cancel()
+        motionTask?.cancel()
+        statsUpdateTask?.cancel()
+        locationTask = nil
+        motionTask = nil
+        statsUpdateTask = nil
+    }
+    
+    func resumeTracking() {
+        guard let tourId = currentTourId else { return }
+        state.trackingStatus = .tracking
+        
+        // pause 시간만큼 시작 시점을 밀어서 경과 시간에서 제외
+        if let pauseStart = pausedAt {
+            let pauseDuration = Date().timeIntervalSince(pauseStart)
+            tourStartDate = tourStartDate?.addingTimeInterval(pauseDuration)
+            pausedAt = nil
+        }
+        
+        sensors.start()
+        
+        statsUpdateTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                await self?.updateStats()
+            }
+        }
+        
+        startSensorTasks(tourId: tourId)
+    }
+    
+    func stopTracking() {
+        state.trackingStatus = .idle
+        sensors.stop()
+        
+        // Cancel all tasks
+        locationTask?.cancel()
+        motionTask?.cancel()
+        statsUpdateTask?.cancel()
+        locationTask = nil
+        motionTask = nil
+        statsUpdateTask = nil
+        
+        // Finish tour — 최종 통계 저장
+        Task {
+            guard let tourId = currentTourId else { return }
+            
+            let elapsed = Date().timeIntervalSince(tourStartDate ?? Date())
+            let stats = analyzer.stats()
+            try? await repository.updateTripStats(
+                id: tourId,
+                tripStats: TripStats(
+                    duration: elapsed,
+                    distance: stats.movingDistanceKm,
+                    avgSpeed: stats.averageSpeedKmh
+                )
+            )
+            try? await repository.updateTopSpeed(id: tourId, speed: analyzer.topSpeed())
+            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
+            try? await repository.finishTour(id: tourId)
+            
+            currentTourId = nil
+            tourStartDate = nil
+        }
+    }
+    
+    func startSensorTasks(tourId: UUID) {
         locationTask = Task { [weak self] in
             guard let self else { return }
             for await location in sensors.speedLocationStream() {
-                // Update GPS status
                 let accuracy = location.horizontalAccuracy
                 if accuracy < 0 {
                     state.gpsStatus = "GPS 없음"
@@ -106,18 +185,13 @@ private extension TourStore {
                     location: locationModel
                 )
                 
-                // Analyzer에 위치 갱신 (린앵글 참조용)
                 analyzer.updateLocation(snapshot)
-                
-                // 속도 분석 (결과만 반환)
                 let speedResult = analyzer.updateSpeed(snapshot)
                 
-                // Repository 저장 (Store가 전담)
                 await saveSpeedResult(speedResult, tourId: tourId)
                 await saveLocation(snapshot, tourId: tourId)
                 
-                
-                let stat = LiveStats(
+                state.liveStats = LiveStats(
                     speed: String(format: "%.0f", analyzer.currentSpeed()),
                     leanAngle: state.liveStats.leanAngle,
                     location: locationModel,
@@ -125,12 +199,6 @@ private extension TourStore {
                     duration: state.liveStats.duration,
                     avgSpeed: state.liveStats.avgSpeed
                 )
-                
-                state.liveStats = stat
-                
-                print("stat:: \(stat)")
-                
-                // Update top speed
                 state.topSpeed = String(format: "%.0f", analyzer.topSpeed())
             }
         }
@@ -148,14 +216,10 @@ private extension TourStore {
                 )
                 
                 analyzer.updateAcceleration(attitudeData)
-                
-                // 자세 분석 (결과만 반환)
                 let leanResult = analyzer.updateAttitude(attitudeData)
-                
-                // Repository 저장 (Store가 전담)
                 await saveLeanResult(leanResult, tourId: tourId)
                 
-                let stat = LiveStats(
+                state.liveStats = LiveStats(
                     speed: state.liveStats.speed,
                     leanAngle: "\(analyzer.currentLeanAngle())",
                     location: state.liveStats.location,
@@ -163,47 +227,10 @@ private extension TourStore {
                     duration: state.liveStats.duration,
                     avgSpeed: state.liveStats.avgSpeed
                 )
-                state.liveStats = stat
-                // Update top lean angle
                 state.topLeanAngle = String(format: "%.1f", abs(analyzer.topLeanAngle()))
             }
         }
-    }
-    
-    func stopTracking() {
-        state.trackingStatus = .idle
-        sensors.stop()
-        
-        // Cancel all tasks
-        locationTask?.cancel()
-        motionTask?.cancel()
-        statsUpdateTask?.cancel()
-        locationTask = nil
-        motionTask = nil
-        statsUpdateTask = nil
-        
-        // Finish tour — 최종 통계 저장
-        Task {
-            guard let tourId = currentTourId else { return }
-            
-            let stats = analyzer.stats()
-            try? await repository.updateTripStats(
-                id: tourId,
-                tripStats: TripStats(
-                    duration: stats.movingTimeSeconds,
-                    distance: stats.movingDistanceKm,
-                    avgSpeed: stats.averageSpeedKmh
-                )
-            )
-            try? await repository.updateTopSpeed(id: tourId, speed: analyzer.topSpeed())
-            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
-            try? await repository.finishTour(id: tourId)
-            
-            currentTourId = nil
-            tourStartDate = nil
-        }
-    }
-    
+    }    
     func updateStats() {
         guard let tourId = currentTourId else { return }
         

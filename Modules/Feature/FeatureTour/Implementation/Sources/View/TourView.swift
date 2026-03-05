@@ -18,8 +18,8 @@ internal struct TourView: View {
     @State private var showNameInput = false
     @State private var tourNameInput = ""
     
-    private var isTracking: Bool {
-        store.state.trackingStatus == .tracking
+    private var isActive: Bool {
+        store.state.trackingStatus != .idle
     }
     
     internal init(store: TourStore) {
@@ -32,14 +32,14 @@ internal struct TourView: View {
     
     internal var body: some View {
         VStack(spacing: 0) {
-            if isTracking {
+            if isActive {
                 topBar
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
             }
             
             HStack(alignment: .top) {
-                if isTracking {
+                if isActive {
                     gauges
                         .padding(.leading, 16)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
@@ -63,7 +63,7 @@ internal struct TourView: View {
             .mapControls { }
             .ignoresSafeArea()
         }
-        .animation(.easeInOut(duration: 0.35), value: isTracking)
+        .animation(.easeInOut(duration: 0.35), value: isActive)
         .alert("투어 이름", isPresented: $showNameInput) {
             TextField("예: 북한산 라이딩", text: $tourNameInput)
             Button("시작") {
@@ -145,7 +145,9 @@ private extension TourView {
 //            mapControlButton(icon: "location.fill") { }
 //            Divider().frame(width: 40)
 //        }
-        mapControlButton(icon: "location.north.fill") { }
+        mapControlButton(icon: "location.north.fill") {
+            cameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
+        }
         .background(.ultraThickMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
@@ -177,14 +179,30 @@ private extension TourView {
 private extension TourView {
     var bottomContent: some View {
         Group {
-            if isTracking {
+            if store.state.trackingStatus == .tracking {
                 TourStatView(
                     duration: store.state.liveStats.duration,
                     distance: store.state.liveStats.distance,
                     avgSpeed: store.state.liveStats.avgSpeed,
                     topSpeed: store.state.topSpeed,
                     topLeanAngle: store.state.topLeanAngle,
-                    onPause: { store.send(.stopTracking) }
+                    trackingStatus: .tracking,
+                    onPause: { store.send(.pauseTracking) },
+                    onStop: { store.send(.stopTracking) }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 16)
+            } else if store.state.trackingStatus == .paused {
+                TourStatView(
+                    duration: store.state.liveStats.duration,
+                    distance: store.state.liveStats.distance,
+                    avgSpeed: store.state.liveStats.avgSpeed,
+                    topSpeed: store.state.topSpeed,
+                    topLeanAngle: store.state.topLeanAngle,
+                    trackingStatus: .paused,
+                    onPause: { store.send(.resumeTracking) },
+                    onStop: { store.send(.stopTracking) }
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .padding(.horizontal, 12)

@@ -14,7 +14,7 @@ struct TrackingButton: View {
     
     private var config: ButtonConfig {
         switch status {
-        case .idle, .paused:
+        case .idle:
             return ButtonConfig(
                 icon: "play.fill",
                 title: "START RECORDING",
@@ -27,10 +27,23 @@ struct TrackingButton: View {
                     endPoint: .trailing
                 )
             )
+        case .paused:
+            return ButtonConfig(
+                icon: "play.fill",
+                title: "RESTART",
+                gradient: LinearGradient(
+                    colors: [
+                        TourDesign.gpsGreen,
+                        TourDesign.gpsGreen.opacity(0.85)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
         case .tracking:
             return ButtonConfig(
                 icon: "pause.fill",
-                title: "PAUSE RECORDING",
+                title: "PAUSE",
                 gradient: LinearGradient(
                     colors: [
                         TourDesign.primaryBlue,

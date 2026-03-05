@@ -14,7 +14,9 @@ struct TourStatView: View {
     let avgSpeed: String
     let topSpeed: String
     let topLeanAngle: String
+    let trackingStatus: TrackingStatus
     let onPause: () -> Void
+    let onStop: () -> Void
     
     var body: some View {
         VStack(spacing: 16) {
@@ -43,9 +45,22 @@ struct TourStatView: View {
                 }
             }
             
-            // PAUSE 버튼
-            TrackingButton(status: .tracking, action: onPause)
-                .padding(.top, 4)
+            // PAUSE + STOP 버튼
+            HStack(spacing: 10) {
+                TrackingButton(status: trackingStatus, action: onPause)
+                
+                Button(action: onStop) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.red)
+                        .clipShape(RoundedRectangle(cornerRadius: TourDesign.buttonCornerRadius))
+                        .shadow(color: Color.red.opacity(0.35), radius: 8, y: 4)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.top, 4)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 20)
@@ -70,7 +85,9 @@ struct TourStatView: View {
                 avgSpeed: "85",
                 topSpeed: "142",
                 topLeanAngle: "49",
-                onPause: {}
+                trackingStatus: .tracking,
+                onPause: {},
+                onStop: {}
             )
         }
     }
