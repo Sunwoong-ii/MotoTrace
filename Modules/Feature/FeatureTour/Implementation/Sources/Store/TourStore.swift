@@ -11,7 +11,7 @@ import CoreDataStorageInterface
 import FeatureTourInterface
 
 @MainActor
-internal final class TourStore: ObservableObject {
+final class TourStore: ObservableObject {
     @Published private(set) var state: TourState
     
     private let sensors: CoreSensorsInterface
@@ -25,7 +25,7 @@ internal final class TourStore: ObservableObject {
     private var tourStartDate: Date?
     private var pausedAt: Date?
     
-    internal init(
+    init(
         sensors: CoreSensorsInterface,
         analyzer: TrackingAnalyzerInterface,
         repository: TourRepositoryInterface,
@@ -37,7 +37,7 @@ internal final class TourStore: ObservableObject {
         self.state = initialState
     }
     
-    internal func send(_ intent: TourIntent) {
+    func send(_ intent: TourIntent) {
         switch intent {
         case .startTracking(let tourName):
             startTracking(tourName: tourName)
@@ -49,10 +49,8 @@ internal final class TourStore: ObservableObject {
             stopTracking()
         }
     }
-}
 
-private extension TourStore {
-    func startTracking(tourName: String) {
+    private func startTracking(tourName: String) {
         guard locationTask == nil, motionTask == nil else { return }
         state.trackingStatus = .tracking
         state.tourName = tourName
@@ -87,7 +85,7 @@ private extension TourStore {
         startSensorTasks(tourId: tourId)
     }
     
-    func pauseTracking() {
+    private func pauseTracking() {
         state.trackingStatus = .paused
         pausedAt = Date()
         sensors.stop()
@@ -100,7 +98,7 @@ private extension TourStore {
         statsUpdateTask = nil
     }
     
-    func resumeTracking() {
+    private func resumeTracking() {
         guard let tourId = currentTourId else { return }
         state.trackingStatus = .tracking
         
@@ -123,7 +121,7 @@ private extension TourStore {
         startSensorTasks(tourId: tourId)
     }
     
-    func stopTracking() {
+    private func stopTracking() {
         state.trackingStatus = .idle
         sensors.stop()
         
@@ -158,7 +156,7 @@ private extension TourStore {
         }
     }
     
-    func startSensorTasks(tourId: UUID) {
+    private func startSensorTasks(tourId: UUID) {
         locationTask = Task { [weak self] in
             guard let self else { return }
             for await location in sensors.speedLocationStream() {
@@ -230,8 +228,9 @@ private extension TourStore {
                 state.topLeanAngle = String(format: "%.1f", abs(analyzer.topLeanAngle()))
             }
         }
-    }    
-    func updateStats() {
+    }
+    
+    private func updateStats() {
         guard let tourId = currentTourId else { return }
         
         let stats = analyzer.stats()
@@ -268,7 +267,7 @@ private extension TourStore {
     
     // MARK: - Repository Save Helpers
     
-    func saveSpeedResult(_ result: SpeedAnalyzerResult, tourId: UUID) async {
+    private func saveSpeedResult(_ result: SpeedAnalyzerResult, tourId: UUID) async {
         if let topSpeed = result.topSpeedUpdated {
             try? await repository.updateTopSpeed(id: tourId, speed: topSpeed)
         }
@@ -278,7 +277,7 @@ private extension TourStore {
         }
     }
     
-    func saveLeanResult(_ result: LeanAnalyzerResult, tourId: UUID) async {
+    private func saveLeanResult(_ result: LeanAnalyzerResult, tourId: UUID) async {
         if let maxLean = result.maxLeanAngleUpdated {
             try? await repository.updateTopLeanAngle(id: tourId, leanAngle: maxLean)
         }
@@ -288,7 +287,7 @@ private extension TourStore {
         }
     }
     
-    func saveLocation(_ data: LocationSnapshot, tourId: UUID) async {
+    private func saveLocation(_ data: LocationSnapshot, tourId: UUID) async {
         let locationDTO = LocationPointDTO(
             latitude: data.location.latitude,
             longitude: data.location.longitude,
@@ -298,7 +297,7 @@ private extension TourStore {
         try? await repository.addLocation(locationDTO, to: tourId)
     }
     
-    func toEventDTO(_ event: TrackingEvent) -> TourEventDTO {
+    private func toEventDTO(_ event: TrackingEvent) -> TourEventDTO {
         TourEventDTO(
             type: event.type.rawValue,
             startTime: event.startTimestamp,
