@@ -1,0 +1,14 @@
+import SwiftUI
+import {{ name }}Interface
+
+struct {{ name }}View: View {
+    @StateObject private var store: {{ name }}Store
+    
+    init(store: {{ name }}Store) {
+        _store = StateObject(wrappedValue: store)
+    }
+    
+    var body: some View {
+        Text("{{ name }}")
+    }
+}

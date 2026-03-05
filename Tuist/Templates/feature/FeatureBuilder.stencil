@@ -1,0 +1,10 @@
+import SwiftUI
+import {{ name }}Interface
+import AppDI
+
+public enum {{ name }}FeatureBuilder: {{ name }}Assembling {
+    public static func assemble(container: AppDIContainer) -> AnyView {
+        let store = {{ name }}Store()
+        return AnyView({{ name }}View(store: store))
+    }
+}

@@ -1,0 +1,10 @@
+import SwiftUI
+
+@main
+struct {{ name }}DemoApp: App {
+    var body: some Scene {
+        WindowGroup {
+            Text("{{ name }} Demo")
+        }
+    }
+}

@@ -1,0 +1,6 @@
+import SwiftUI
+import AppDI
+
+public protocol {{ name }}Assembling {
+    static func assemble(container: AppDIContainer) -> AnyView
+}

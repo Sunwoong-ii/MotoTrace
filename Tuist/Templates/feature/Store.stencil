@@ -1,0 +1,17 @@
+import Foundation
+import {{ name }}Interface
+
+@MainActor
+final class {{ name }}Store: ObservableObject {
+    @Published private(set) var state: {{ name }}State
+    
+    init(initialState: {{ name }}State = .init()) {
+        self.state = initialState
+    }
+    
+    func send(_ intent: {{ name }}Intent) {
+        switch intent {
+        
+        }
+    }
+}
