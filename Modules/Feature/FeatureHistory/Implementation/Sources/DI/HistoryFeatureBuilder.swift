@@ -3,11 +3,13 @@ import FeatureHistoryInterface
 import AppDI
 import CoreDataStorageInterface
 
-public enum HistoryFeatureAssembler: @preconcurrency HistoryAssembling {
+/// 히스토리 Feature Builder
+public enum HistoryAssembler: @preconcurrency HistoryAssembling {
+    
     @MainActor
     public static func assemble(container: AppDIContainer) -> AnyView {
         let repository = container.resolve(TourRepositoryInterface.self)
         let store = HistoryStore(repository: repository)
-        return AnyView(HistoryView(store: store))
+        return AnyView(HistoryView(store: store, container: container))
     }
 }

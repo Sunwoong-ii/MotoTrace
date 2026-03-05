@@ -6,7 +6,7 @@ import CoreDataStorageInterface
 import FeatureTourInterface
 
 /// 투어 Feature Assembler
-public enum TourFeatureAssembler: @preconcurrency TourFeatureAssembling {
+public enum TourAssembler: @preconcurrency TourFeatureAssembling {
     
     @MainActor
     public static func assemble(container: AppDIContainer, initialState: TourState) -> AnyView {

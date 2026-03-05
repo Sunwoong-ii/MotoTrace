@@ -17,14 +17,14 @@ struct RootTabView: View {
     var body: some View {
         TabView {
             Tab("Tour", systemImage: "figure.outdoor.cycle") {
-                TourFeatureAssembler.assemble(
+                TourAssembler.assemble(
                     container: container,
                     initialState: TourState()
                 )
             }
             
             Tab("History", systemImage: "clock.arrow.counterclockwise") {
-                HistoryFeatureAssembler.assemble(container: container)
+                HistoryAssembler.assemble(container: container)
             }
             
             Tab("Settings", systemImage: "gearshape.fill") {

@@ -1,12 +1,16 @@
 import SwiftUI
+import AppDI
 import FeatureHistoryInterface
+import HistoryDetail
 
 /// 라이딩 히스토리 화면
 struct HistoryView: View {
     @StateObject private var store: HistoryStore
+    let container: AppDIContainer
     
-    init(store: HistoryStore) {
+    init(store: HistoryStore, container: AppDIContainer) {
         self._store = StateObject(wrappedValue: store)
+        self.container = container
     }
     
     var body: some View {
@@ -31,7 +35,15 @@ struct HistoryView: View {
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(store.state.tours, id: \.id) { tour in
-                    tourCell(tour)
+                    NavigationLink {
+                        HistoryDetailFeatureBuilder.assemble(
+                            container: container,
+                            tourId: tour.id
+                        )
+                    } label: {
+                        tourCell(tour)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
@@ -101,17 +113,5 @@ struct HistoryView: View {
         formatter.dateFormat = "yyyy.MM.dd  HH:mm"
         formatter.locale = Locale(identifier: "ko_KR")
         return formatter.string(from: date)
-    }
-    
-    private func formatDuration(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
-        
-        if hours > 0 {
-            return String(format: "%dh %02dm", hours, minutes)
-        } else {
-            return String(format: "%dm %02ds", minutes, secs)
-        }
     }
 }
