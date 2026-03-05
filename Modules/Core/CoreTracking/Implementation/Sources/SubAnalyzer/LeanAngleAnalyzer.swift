@@ -23,6 +23,7 @@ final class LeanAnalyzer {
         let deltaRoll = data.rollDegrees - leanZeroRoll
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
+        currentLeanAngleDegrees = lean
         
         var result = LeanAnalyzerResult()
         if abs(lean) > abs(topLeanAngleDegrees) {

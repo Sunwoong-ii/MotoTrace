@@ -22,6 +22,7 @@ internal final class TourStore: ObservableObject {
     private var statsUpdateTask: Task<Void, Never>?
     
     private var currentTourId: UUID?
+    private var tourStartDate: Date?
     
     internal init(
         sensors: CoreSensorsInterface,
@@ -54,6 +55,7 @@ private extension TourStore {
         // Create new tour
         let tourId = UUID()
         currentTourId = tourId
+        tourStartDate = Date()
         
         let tourDTO = TourRecordDTO(
             id: tourId,
@@ -198,6 +200,7 @@ private extension TourStore {
             try? await repository.finishTour(id: tourId)
             
             currentTourId = nil
+            tourStartDate = nil
         }
     }
     
@@ -206,10 +209,11 @@ private extension TourStore {
         
         let stats = analyzer.stats()
         
-        // Format duration
-        let hours = Int(stats.movingTimeSeconds) / 3600
-        let minutes = (Int(stats.movingTimeSeconds) % 3600) / 60
-        let seconds = Int(stats.movingTimeSeconds) % 60
+        // 경과 시간: 시작 시점 - 현재 시간
+        let elapsed = Date().timeIntervalSince(tourStartDate ?? Date())
+        let hours = Int(elapsed) / 3600
+        let minutes = (Int(elapsed) % 3600) / 60
+        let seconds = Int(elapsed) % 60
         let durationString = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
         
         // Update state

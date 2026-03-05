@@ -24,11 +24,9 @@ internal struct TourView: View {
     
     internal init(store: TourStore) {
         _store = StateObject(wrappedValue: store)
-        _cameraPosition = State(initialValue: .region(
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
-                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-            )
+        _cameraPosition = State(initialValue: .userLocation(
+            followsHeading: true,
+            fallback: .automatic
         ))
     }
     
