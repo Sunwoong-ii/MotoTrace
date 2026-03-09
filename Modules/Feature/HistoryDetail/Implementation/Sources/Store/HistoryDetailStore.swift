@@ -31,20 +31,27 @@ final class HistoryDetailStore: ObservableObject {
         Task {
             do {
                 let tours = try await repository.fetchAllTours()
-                guard let dto = tours.first(where: { $0.id == tourId }) else { return }
+                guard let dto = tours.first(where: { $0.id == tourId }) else {
+                    print("⚠️ [HistoryDetailStore] loadTour 실패: tourId(\(tourId))에 해당하는 데이터를 찾을 수 없습니다.")
+                    return
+                }
                 
-                state.tourName = dto.tourName
-                state.createdAt = dto.createdAt
-                state.duration = dto.duration
-                state.distance = dto.distance
-                state.avgSpeed = dto.avgSpeed
-                state.topSpeed = dto.topSpeed
-                state.maxLeanAngle = dto.maxLeanAngle
-                state.routeCoordinates = dto.locations
-                    .sorted { $0.timestamp < $1.timestamp }
-                    .map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+                print("✅ [HistoryDetailStore] loadTour 성공: \(dto.tourName), location count: \(dto.locations.count)")
+                
+                state = HistoryDetailState(
+                    tourName: dto.tourName,
+                    createdAt: dto.createdAt,
+                    duration: dto.duration,
+                    distance: dto.distance,
+                    avgSpeed: dto.avgSpeed,
+                    topSpeed: dto.topSpeed,
+                    maxLeanAngle: dto.maxLeanAngle,
+                    routeCoordinates: dto.locations
+                        .sorted { $0.timestamp < $1.timestamp }
+                        .map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
+                )
             } catch {
-                print("Failed to load tour: \(error)")
+                print("🚨 [HistoryDetailStore] Failed to load tour error: \(error)")
             }
         }
     }

@@ -10,6 +10,7 @@ import AppDI
 import FeatureTour
 import FeatureTourInterface
 import FeatureHistory
+import FeatureHistoryInterface
 
 struct RootTabView: View {
     let container: AppDIContainer

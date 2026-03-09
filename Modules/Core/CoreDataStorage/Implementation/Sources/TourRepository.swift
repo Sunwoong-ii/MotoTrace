@@ -239,7 +239,7 @@ public actor TourRepository: TourRepositoryInterface {
         }
         
         return TourRecordDTO(
-            id: UUID(), // Entity에 ID가 없어서 임시 생성
+            id: record.id,
             duration: record.duration,
             distance: record.distance,
             avgSpeed: record.avgSpeed,

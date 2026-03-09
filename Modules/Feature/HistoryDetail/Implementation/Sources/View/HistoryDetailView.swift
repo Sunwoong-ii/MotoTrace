@@ -16,7 +16,6 @@ struct HistoryDetailView: View {
             // 상단 바
             topBar
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
             
             Spacer()
             

@@ -9,6 +9,7 @@ import CoreSensorsInterface
 import CoreTrackingInterface
 import CoreDataStorageInterface
 import FeatureTourInterface
+import CoreLocation
 
 @MainActor
 final class TourStore: ObservableObject {
@@ -70,6 +71,7 @@ final class TourStore: ObservableObject {
         }
         
         analyzer.reset()
+        state.routeCoordinates.removeAll()
         
         sensors.requestWhenInUseAuthorization()
         sensors.start()
@@ -197,6 +199,7 @@ final class TourStore: ObservableObject {
                     duration: state.liveStats.duration,
                     avgSpeed: state.liveStats.avgSpeed
                 )
+                state.routeCoordinates.append(CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude))
                 state.topSpeed = String(format: "%.0f", analyzer.topSpeed())
             }
         }

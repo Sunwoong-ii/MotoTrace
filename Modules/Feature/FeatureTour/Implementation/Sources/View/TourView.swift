@@ -58,6 +58,11 @@ internal struct TourView: View {
         .background {
             Map(position: $cameraPosition) {
                 UserAnnotation()
+                
+                if store.state.routeCoordinates.count >= 2 {
+                    MapPolyline(coordinates: store.state.routeCoordinates)
+                        .stroke(.blue, lineWidth: 4)
+                }
             }
             .mapStyle(.standard)
             .mapControls { }

@@ -22,6 +22,7 @@ public struct TourState {
     public var cameraPosition: MapCameraPosition
     
     public var liveStats: LiveStats
+    public var routeCoordinates: [CLLocationCoordinate2D]
     
     public init(
         tourName: String = "",
@@ -30,7 +31,8 @@ public struct TourState {
         topSpeed: String = "0",
         topLeanAngle: String = "0",
         cameraPosition: MapCameraPosition = .automatic,
-        liveStats: LiveStats = LiveStats()
+        liveStats: LiveStats = LiveStats(),
+        routeCoordinates: [CLLocationCoordinate2D] = []
     ) {
         self.tourName = tourName
         self.trackingStatus = trackingStatus
@@ -39,5 +41,6 @@ public struct TourState {
         self.topLeanAngle = topLeanAngle
         self.cameraPosition = cameraPosition
         self.liveStats = liveStats
+        self.routeCoordinates = routeCoordinates
     }
 }
