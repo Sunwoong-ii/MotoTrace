@@ -19,36 +19,44 @@ struct LeanAngleView: View {
         else if angleValue < -0.5 { return "left" }
         return ""
     }
-//
-//    private var displayAngle: String {
-//        let absValue = abs(angleValue)
-//        if absValue < 1 {
-//            return String(format: "%.0f", absValue)
-//        }
-//        return String(format: "%.1f", absValue)
-//    }
+    private var displayAngle: String {
+        let absValue = abs(angleValue)
+        if absValue < 1 {
+            return String(format: "%.0f", absValue)
+        }
+        return String(format: "%.0f", absValue) // 소수점 없애고 정수로만 표시
+    }
     
     var body: some View {
         VStack(spacing: 4) {
             ZStack {
-                // 틸트 표시 바
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(TourDesign.gaugeTrack)
-                    .frame(width: 50, height: 4)
-                
-                // 현재 틸트 표시
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(TourDesign.accentOrange)
-                    .frame(width: 50, height: 4)
-                    .rotationEffect(.degrees(-angleValue))
-                    .animation(.easeOut(duration: 0.2), value: angleValue)
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: 12)
+                    
+                    ZStack {
+                        // 틸트 표시 바
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(TourDesign.gaugeTrack)
+                            .frame(width: 50, height: 4)
+                        
+                        // 현재 틸트 표시
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(TourDesign.accentOrange)
+                            .frame(width: 50, height: 4)
+                            .rotationEffect(.degrees(-angleValue))
+                            .animation(.easeOut(duration: 0.2), value: angleValue)
+                    }
+                    
+                    Spacer()
+                }
                 
                 // 앵글 텍스트
                 VStack(spacing: 0) {
                     Spacer().frame(height: 14)
                     
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
-                        Text(angle)
+                        Text(displayAngle)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundStyle(TourDesign.textPrimary)
                         

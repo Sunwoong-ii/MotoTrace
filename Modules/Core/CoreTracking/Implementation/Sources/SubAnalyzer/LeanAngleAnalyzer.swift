@@ -15,11 +15,18 @@ final class LeanAnalyzer {
     private var topLeanAngleDegrees: Double = 0
     private var currentLeanAngleDegrees: Double = 0
     
+    private var isCalibrated: Bool = false
+    
     init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
     
     func updateAttitude(_ data: MotionSnapshot, locationSnapshot: LocationSnapshot) -> LeanAnalyzerResult {
+        if !isCalibrated {
+            calibrateLeanZero(rollDegrees: data.rollDegrees, pitchDegrees: data.pitchDegrees)
+            isCalibrated = true
+        }
+        
         let deltaRoll = data.rollDegrees - leanZeroRoll
         let deltaPitch = data.pitchDegrees - leanZeroPitch
         let lean = abs(deltaRoll) >= abs(deltaPitch) ? deltaRoll : deltaPitch
@@ -53,11 +60,17 @@ final class LeanAnalyzer {
         self.thresholds = thresholds
     }
     
+    func handlePause() {
+        isCalibrated = false
+        currentLeanAngleDegrees = 0
+    }
+    
     func reset() {
         leanZeroRoll = 0
         leanZeroPitch = 0
         topLeanAngleDegrees = 0
         currentLeanAngleDegrees = 0
+        isCalibrated = false
     }
     
     // MARK: - Getters

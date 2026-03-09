@@ -23,6 +23,7 @@ public protocol TrackingAnalyzerInterface {
     func setThresholds(_ thresholds: TrackingThresholds)
     func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double)
     func reset()
+    func handlePause()
     
     // MARK: - Real-time Data Getters
     func currentSpeed() -> Double

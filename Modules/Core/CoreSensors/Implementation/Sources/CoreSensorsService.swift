@@ -63,6 +63,19 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         motionStreamValue
     }
     
+    func currentMotion() -> Motion? {
+        guard let motion = motionManager.deviceMotion else { return nil }
+        return Motion(
+            rollDegrees: motion.attitude.roll * 180.0 / .pi,
+            pitchDegrees: motion.attitude.pitch * 180.0 / .pi,
+            yawDegrees: motion.attitude.yaw * 180.0 / .pi,
+            userAccelerationX: motion.userAcceleration.x,
+            userAccelerationY: motion.userAcceleration.y,
+            userAccelerationZ: motion.userAcceleration.z,
+            timestamp: Date()
+        )
+    }
+    
     private func startMotionUpdates() {
         guard motionManager.isDeviceMotionAvailable else { return }
         motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] (motion: CMDeviceMotion?, _) in

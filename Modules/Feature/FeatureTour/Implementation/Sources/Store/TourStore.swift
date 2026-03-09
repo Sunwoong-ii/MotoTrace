@@ -92,16 +92,11 @@ final class TourStore: ObservableObject {
         pausedAt = Date()
         sensors.stop()
         
-        locationTask?.cancel()
-        motionTask?.cancel()
-        statsUpdateTask?.cancel()
-        locationTask = nil
-        motionTask = nil
-        statsUpdateTask = nil
+        analyzer.handlePause()
     }
     
     private func resumeTracking() {
-        guard let tourId = currentTourId else { return }
+        guard currentTourId != nil else { return }
         state.trackingStatus = .tracking
         
         // pause 시간만큼 시작 시점을 밀어서 경과 시간에서 제외
@@ -112,15 +107,6 @@ final class TourStore: ObservableObject {
         }
         
         sensors.start()
-        
-        statsUpdateTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-                await self?.updateStats()
-            }
-        }
-        
-        startSensorTasks(tourId: tourId)
     }
     
     private func stopTracking() {

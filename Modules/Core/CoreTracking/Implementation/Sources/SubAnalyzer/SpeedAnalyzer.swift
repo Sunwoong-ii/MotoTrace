@@ -7,8 +7,6 @@
 import Foundation
 import CoreTrackingInterface
 
-
-
 final class SpeedAnalyzer {
     
     private struct MotionTrigger {
@@ -246,6 +244,12 @@ final class SpeedAnalyzer {
         movingDistanceKm = 0
         activeEvent = nil
         topSpeedKmh = 0
+        currentSpeedKmh = 0
+    }
+    
+    func handlePause() {
+        recentSnapshots.removeAll()
+        activeEvent = nil
         currentSpeedKmh = 0
     }
     

@@ -58,6 +58,12 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
         leanAnalyzer.calibrateLeanZero(rollDegrees: rollDegrees, pitchDegrees: pitchDegrees)
     }
     
+    func handlePause() {
+        speedAnalyzer.handlePause()
+        leanAnalyzer.handlePause()
+        recentLocation = nil
+    }
+    
     func reset() {
         speedAnalyzer.reset()
         leanAnalyzer.reset()
