@@ -36,23 +36,23 @@ internal struct TourView: View {
                 topBar
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-            }
-            
-            HStack(alignment: .top) {
-                if isActive {
+                
+                HStack {
                     gauges
                         .padding(.leading, 16)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
+                    
+                    Spacer()
                 }
-                Spacer()
-                mapControls
-                    .padding(.trailing, 16)
             }
-            .padding(.top, 8)
-            
+
             Spacer()
             
-            bottomContent
+            VStack(spacing: 12) {
+                currentPositionButton
+                
+                bottomContent
+            }
         }
         // Map을 background로 — safe area 무시하여 전체 화면 채움
         .background {
@@ -94,19 +94,7 @@ private extension TourView {
     var topBar: some View {
         HStack {
             Spacer()
-//            Button {
-//                // TODO: Navigation back
-//            } label: {
-//                Image(systemName: "chevron.left")
-//                    .font(.system(size: 16, weight: .semibold))
-//                    .foregroundStyle(TourDesign.textPrimary)
-//                    .frame(width: 40, height: 40)
-//                    .background(.ultraThinMaterial)
-//                    .clipShape(Circle())
-//            }
-//            
-//            Spacer()
-            
+
             VStack(spacing: 4) {
                 Text(store.state.tourName)
                     .font(.system(size: 17, weight: .bold))
@@ -143,28 +131,22 @@ private extension TourView {
 // MARK: - Right Map Controls
 
 private extension TourView {
-    var mapControls: some View {
-//        VStack(spacing: 1) {
-//            mapControlButton(icon: "square.3.layers.3d") { }
-//            Divider().frame(width: 40)
-//            mapControlButton(icon: "location.fill") { }
-//            Divider().frame(width: 40)
-//        }
-        mapControlButton(icon: "location.north.fill") {
-            cameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
+    var currentPositionButton: some View {
+        Button {
+            cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "location.fill")
+                Text("현재 위치로")
+            }
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
         }
-        .background(.ultraThickMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-    }
-    
-    func mapControlButton(icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(TourDesign.textPrimary)
-                .frame(width: 44, height: 44)
-        }
+        .background(TourDesign.primaryBlue)
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
     }
 }
 
