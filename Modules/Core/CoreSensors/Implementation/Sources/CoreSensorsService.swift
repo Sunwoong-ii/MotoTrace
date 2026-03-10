@@ -33,6 +33,12 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
         locationManager.distanceFilter = kCLDistanceFilterNone
         locationManager.activityType = .fitness
+        
+        // 백그라운드 추적 필수 옵션
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.showsBackgroundLocationIndicator = true
+        locationManager.pausesLocationUpdatesAutomatically = false
+        
         motionQueue.qualityOfService = .userInitiated
         motionManager.deviceMotionUpdateInterval = 0.2
     }

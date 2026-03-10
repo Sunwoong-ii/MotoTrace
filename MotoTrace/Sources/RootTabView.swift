@@ -17,19 +17,15 @@ struct RootTabView: View {
     
     var body: some View {
         TabView {
-            Tab("Tour", systemImage: "figure.outdoor.cycle") {
+            Tab("Tour", systemImage: "map") {
                 TourAssembler.assemble(
                     container: container,
                     initialState: TourState()
                 )
             }
             
-            Tab("History", systemImage: "clock.arrow.counterclockwise") {
+            Tab("History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90") {
                 HistoryAssembler.assemble(container: container)
-            }
-            
-            Tab("Settings", systemImage: "gearshape.fill") {
-                Text("Settings")
             }
         }
         .tint(.blue)

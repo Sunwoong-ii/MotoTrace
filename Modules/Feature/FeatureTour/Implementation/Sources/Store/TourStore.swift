@@ -73,7 +73,7 @@ final class TourStore: ObservableObject {
         analyzer.reset()
         state.routeCoordinates.removeAll()
         
-        sensors.requestWhenInUseAuthorization()
+        sensors.requestAlwaysAuthorization()
         sensors.start()
         
         // Start periodic stats update (every 1 second)
