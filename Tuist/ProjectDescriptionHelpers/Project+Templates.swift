@@ -110,6 +110,18 @@ public extension Project {
                 deploymentTargets: BuildSettings.deploymentTargets,
                 sources: ["Implementation/Sources/**"],
                 dependencies: resolvedImplementationDependencies
+            ),
+            .target(
+                name: "\(name)Tests",
+                destinations: BuildSettings.destinations,
+                product: .unitTests,
+                bundleId: "\(BuildSettings.bundleIdPrefix).\(name)Tests",
+                deploymentTargets: BuildSettings.deploymentTargets,
+                infoPlist: .default,
+                sources: ["Tests/Sources/**"],
+                dependencies: [
+                    .target(name: name)
+                ]
             )
         ]
     }
