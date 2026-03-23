@@ -18,6 +18,7 @@ final class TourStore: ObservableObject {
     private let sensors: CoreSensorsInterface
     private let analyzer: TrackingAnalyzerInterface
     private let repository: TourRepositoryInterface
+    private let sessionStore: TrackingSessionRepositoryInterface
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
     private var statsUpdateTask: Task<Void, Never>?
@@ -30,11 +31,13 @@ final class TourStore: ObservableObject {
         sensors: CoreSensorsInterface,
         analyzer: TrackingAnalyzerInterface,
         repository: TourRepositoryInterface,
+        sessionStore: TrackingSessionRepositoryInterface,
         initialState: TourState = TourState()
     ) {
         self.sensors = sensors
         self.analyzer = analyzer
         self.repository = repository
+        self.sessionStore = sessionStore
         self.state = initialState
     }
     
@@ -48,6 +51,8 @@ final class TourStore: ObservableObject {
             resumeTracking()
         case .stopTracking:
             stopTracking()
+        case .restoreTracking:
+            Task { await restoreTracking() }
         }
     }
 
@@ -76,6 +81,14 @@ final class TourStore: ObservableObject {
         sensors.requestAlwaysAuthorization()
         sensors.start()
         
+        // 세션 메타데이터 저장 (앱 종료 시 복구용)
+        sessionStore.save(ActiveTrackingSession(
+            tourId: tourId,
+            startDate: tourStartDate ?? Date(),
+            pausedAt: nil,
+            statusRaw: "tracking"
+        ))
+        
         // Start periodic stats update (every 1 second)
         statsUpdateTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -93,10 +106,20 @@ final class TourStore: ObservableObject {
         sensors.stop()
         
         analyzer.handlePause()
+        
+        // pausedAt 반영해 세션 갱신
+        if let tourId = currentTourId {
+            sessionStore.save(ActiveTrackingSession(
+                tourId: tourId,
+                startDate: tourStartDate ?? Date(),
+                pausedAt: pausedAt,
+                statusRaw: "paused"
+            ))
+        }
     }
     
     private func resumeTracking() {
-        guard currentTourId != nil else { return }
+        guard let tourId = currentTourId else { return }
         state.trackingStatus = .tracking
         
         // pause 시간만큼 시작 시점을 밀어서 경과 시간에서 제외
@@ -105,6 +128,14 @@ final class TourStore: ObservableObject {
             tourStartDate = tourStartDate?.addingTimeInterval(pauseDuration)
             pausedAt = nil
         }
+        
+        // pausedAt = nil 반영해 세션 갱신
+        sessionStore.save(ActiveTrackingSession(
+            tourId: tourId,
+            startDate: tourStartDate ?? Date(),
+            pausedAt: nil,
+            statusRaw: "tracking"
+        ))
         
         sensors.start()
     }
@@ -141,6 +172,51 @@ final class TourStore: ObservableObject {
             
             currentTourId = nil
             tourStartDate = nil
+            
+            // 세션 삭제 — 정상 종료이므로 복구 불필요
+            sessionStore.clear()
+        }
+    }
+    
+    // MARK: - Session Recovery
+    
+    private func restoreTracking() async {
+        guard let session = sessionStore.load() else { return }
+        
+        // repository에 해당 투어가 실제로 존재하는지 검증
+        guard let tour = try? await repository.fetchTour(id: session.tourId) else {
+            sessionStore.clear()
+            return
+        }
+        
+        // 인메모리 상태 복원
+        currentTourId = session.tourId
+        tourStartDate = session.startDate
+        pausedAt = session.pausedAt
+        state.tourName = tour.tourName  // tourName은 repository에서 가져옴
+        state.topSpeed = String(format: "%.0f", tour.topSpeed)
+        state.topLeanAngle = String(format: "%.1f", tour.maxLeanAngle)
+        
+        // 지도에 이전 경로 복원
+        state.routeCoordinates = tour.locations.map {
+            CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
+        }
+        
+        if session.statusRaw == "tracking" {
+            // 트래킹 중이었으면 센서 재개
+            state.trackingStatus = .tracking
+            sensors.requestAlwaysAuthorization()
+            sensors.start()
+            statsUpdateTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(1))
+                    await self?.updateStats()
+                }
+            }
+            startSensorTasks(tourId: session.tourId)
+        } else {
+            // 일시정지 상태였으면 UI만 복원, 사용자 액션 대기
+            state.trackingStatus = .paused
         }
     }
     

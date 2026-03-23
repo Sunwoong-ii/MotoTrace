@@ -16,5 +16,8 @@ public enum CoreDataStorageAssembly: DIAssembly {
             let modelContainer = container.resolve(ModelContainer.self)
             return TourRepository(modelContainer: modelContainer)
         }
+        container.register(TrackingSessionRepositoryInterface.self, scope: .singleton) {
+            TrackingSessionRepository()
+        }
     }
 }

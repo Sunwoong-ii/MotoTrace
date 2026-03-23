@@ -16,10 +16,12 @@ public enum TourAssembler: @preconcurrency TourFeatureAssembling {
             with: CoreTrackingDependencies()
         )
         let repository = container.resolve(TourRepositoryInterface.self)
+        let sessionStore = container.resolve(TrackingSessionRepositoryInterface.self)
         let store = TourStore(
             sensors: sensors,
             analyzer: analyzer,
             repository: repository,
+            sessionStore: sessionStore,
             initialState: initialState
         )
         return AnyView(TourView(store: store))

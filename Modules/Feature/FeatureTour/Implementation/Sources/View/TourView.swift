@@ -69,6 +69,12 @@ internal struct TourView: View {
             .ignoresSafeArea()
         }
         .animation(.easeInOut(duration: 0.35), value: isActive)
+        .task {
+            // idle 상태일 때만 시도 — 앱이 정상 실행된 경우엔 sessionStore.load()가 nil을 반환해 무시됨
+            if store.state.trackingStatus == .idle {
+                store.send(.restoreTracking)
+            }
+        }
         .alert("투어 이름", isPresented: $showNameInput) {
             TextField("예: 북한산 라이딩", text: $tourNameInput)
             Button("시작") {
