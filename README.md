@@ -123,11 +123,13 @@ let repo = container.resolve(TourRepositoryInterface.self)
 
 **기본 임계값 (`TrackingPolicy`)**
 ```swift
-accelerationKmhPerSec: 16.7   // 급가속 감지 기준
-decelerationKmhPerSec: 16.7   // 급감속 감지 기준
+accelerationKmhPerSec: 16.7   // 급가속 감지 기준 — 0→100 km/h 약 6초 이내 가속
+decelerationKmhPerSec: 16.7   // 급감속 감지 기준 — 100→0 km/h 약 6초 이내 제동
 minLeanAngleDegrees:   30.0   // 뱅킹각 이벤트 기록 기준
-stopSpeedKmh:           3.0   // 정차 판단 기준
+stopSpeedKmh:           3.0   // 정차 판단 기준 (이하 구간은 주행 시간/거리 제외)
 ```
+
+> `16.7 km/h/s` 는 `100 km/h ÷ 16.7 ≈ 6초`, 즉 **0→100 km/h 6초 이내** 가속을 급가속으로 판단하는 기준입니다. 일반 중형 오토바이가 풀 스로틀로 가속하는 수준에서 트리거됩니다.
 
 ### 데이터 저장 (CoreDataStorage)
 
