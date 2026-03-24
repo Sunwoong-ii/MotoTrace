@@ -11,15 +11,19 @@ public struct LocationSnapshot: Codable {
     public let timestamp: Date
     public let speedKmh: Double
     public let location: Location
+    /// GPS 진행 방향 (도, 0=북 시계방향). 유효하지 않으면 -1
+    public let course: Double
     
     public init(
         timestamp: Date,
         speedKmh: Double,
-        location: Location
+        location: Location,
+        course: Double = -1
     ) {
         self.timestamp = timestamp
         self.speedKmh = speedKmh
         self.location = location
+        self.course = course
     }
 }
 
@@ -32,13 +36,31 @@ public struct MotionSnapshot: Codable {
     public let userAccelerationY: Double
     public let userAccelerationZ: Double
     
+    // 중력 벡터 (device frame, 크기 1)
+    public let gravityX: Double
+    public let gravityY: Double
+    public let gravityZ: Double
+    
+    // Attitude 쿼터니언 (device → world 변환)
+    public let quaternionW: Double
+    public let quaternionX: Double
+    public let quaternionY: Double
+    public let quaternionZ: Double
+    
     public init(
         timestamp: Date,
         rollDegrees: Double,
         pitchDegrees: Double,
         userAccelerationX: Double,
         userAccelerationY: Double,
-        userAccelerationZ: Double
+        userAccelerationZ: Double,
+        gravityX: Double = 0,
+        gravityY: Double = 0,
+        gravityZ: Double = -1,
+        quaternionW: Double = 1,
+        quaternionX: Double = 0,
+        quaternionY: Double = 0,
+        quaternionZ: Double = 0
     ) {
         self.timestamp = timestamp
         self.rollDegrees = rollDegrees
@@ -46,6 +68,13 @@ public struct MotionSnapshot: Codable {
         self.userAccelerationX = userAccelerationX
         self.userAccelerationY = userAccelerationY
         self.userAccelerationZ = userAccelerationZ
+        self.gravityX = gravityX
+        self.gravityY = gravityY
+        self.gravityZ = gravityZ
+        self.quaternionW = quaternionW
+        self.quaternionX = quaternionX
+        self.quaternionY = quaternionY
+        self.quaternionZ = quaternionZ
     }
 }
 

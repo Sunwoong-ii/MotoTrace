@@ -51,6 +51,7 @@ final class SpeedAnalyzer {
             topSpeedUpdate = topSpeedKmh
         }
         
+        // 가속도 계산: 넓은 윈도우(oldest)로 노이즈 스무딩
         guard let prevSnapshot = recentSnapshots.first else {
             return SpeedAnalyzerResult(topSpeedUpdated: topSpeedUpdate)
         }
@@ -72,7 +73,13 @@ final class SpeedAnalyzer {
             location: currentSnapshot.location
         )
         
-        updateMovingStats(speed: currentSnapshot.speedKmh, deltaTime: deltaTime)
+        // 거리/시간 계산: 직전 스냅샷(last) 기준 — first 사용 시 5배 과산정 발생
+        if let lastSnapshot = recentSnapshots.last {
+            let statsDeltaTime = currentSnapshot.location.timestamp.timeIntervalSince(lastSnapshot.timestamp)
+            if statsDeltaTime > 0 {
+                updateMovingStats(speed: currentSnapshot.speedKmh, deltaTime: statsDeltaTime)
+            }
+        }
         
         return SpeedAnalyzerResult(topSpeedUpdated: topSpeedUpdate, event: event)
     }
