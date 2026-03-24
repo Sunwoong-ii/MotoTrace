@@ -244,7 +244,8 @@ final class TourStore: ObservableObject {
                 let snapshot = LocationSnapshot(
                     timestamp: location.timestamp,
                     speedKmh: location.speedKmh,
-                    location: locationModel
+                    location: locationModel,
+                    course: location.course
                 )
                 
                 analyzer.updateLocation(snapshot)
@@ -275,7 +276,14 @@ final class TourStore: ObservableObject {
                     pitchDegrees: motion.pitchDegrees,
                     userAccelerationX: motion.userAccelerationX,
                     userAccelerationY: motion.userAccelerationY,
-                    userAccelerationZ: motion.userAccelerationZ
+                    userAccelerationZ: motion.userAccelerationZ,
+                    gravityX: motion.gravityX,
+                    gravityY: motion.gravityY,
+                    gravityZ: motion.gravityZ,
+                    quaternionW: motion.quaternionW,
+                    quaternionX: motion.quaternionX,
+                    quaternionY: motion.quaternionY,
+                    quaternionZ: motion.quaternionZ
                 )
                 
                 analyzer.updateAcceleration(attitudeData)

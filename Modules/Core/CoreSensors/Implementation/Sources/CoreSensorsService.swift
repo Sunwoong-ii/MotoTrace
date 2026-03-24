@@ -92,6 +92,8 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
             let pitch = motion.attitude.pitch * 180.0 / .pi
             let yaw = motion.attitude.yaw * 180.0 / .pi
             let acceleration = motion.userAcceleration
+            let gravity = motion.gravity
+            let q = motion.attitude.quaternion
             self?.motionContinuation?.yield(
                 Motion(
                     rollDegrees: roll,
@@ -100,7 +102,14 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
                     userAccelerationX: acceleration.x,
                     userAccelerationY: acceleration.y,
                     userAccelerationZ: acceleration.z,
-                    timestamp: Date()
+                    timestamp: Date(),
+                    gravityX: gravity.x,
+                    gravityY: gravity.y,
+                    gravityZ: gravity.z,
+                    quaternionW: q.w,
+                    quaternionX: q.x,
+                    quaternionY: q.y,
+                    quaternionZ: q.z
                 )
             )
         }
@@ -112,13 +121,16 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         
         // m/s -> km/h
         let speedKmh = speedMetersPerSecond * 3.6
+        // course: 유효하지 않으면 -1
+        let course = location.course >= 0 ? location.course : -1
         locationContinuation?.yield(
             Location(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
                 speedKmh: speedKmh,
                 horizontalAccuracy: location.horizontalAccuracy,
-                timestamp: location.timestamp
+                timestamp: location.timestamp,
+                course: course
             )
         )
     }
