@@ -69,6 +69,18 @@ internal struct TourView: View {
             .ignoresSafeArea()
         }
         .animation(.easeInOut(duration: 0.35), value: isActive)
+        .onChange(of: store.state.routeCoordinates.count) { _, _ in
+            updateCamera()
+        }
+        .onChange(of: isActive) { _, active in
+            if active {
+                updateCamera()
+            } else {
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    cameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
+                }
+            }
+        }
         .task {
             // idle 상태일 때만 시도 — 앱이 정상 실행된 경우엔 sessionStore.load()가 nil을 반환해 무시됨
             if store.state.trackingStatus == .idle {
@@ -100,7 +112,7 @@ private extension TourView {
     var topBar: some View {
         HStack {
             Spacer()
-
+            
             VStack(spacing: 4) {
                 Text(store.state.tourName)
                     .font(.system(size: 17, weight: .bold))
@@ -130,6 +142,31 @@ private extension TourView {
         case "GPS 보통": .orange
         case "GPS 약함": .red
         default: TourDesign.textSecondary
+        }
+    }
+    
+    /// 트래킹 중 카메라 업데이트
+    /// 하단 패널(약 220pt)이 올라오거나 위치가 변경되면
+    /// 카메라 중심을 실제 위치보다 남쪽으로 오프셋시켜 마커가 화면 위쪽에 표시됨
+    func updateCamera() {
+        guard isActive else { return }
+        let loc = store.state.liveStats.location
+        guard loc.latitude != 0 || loc.longitude != 0 else { return }
+        
+        // 오프셋: 카메라 400m 거리에서 화면 약 40% 아래로 중심 이동 (≈ 160m ≈ 0.00144°)
+        // → 사용자 마커가 화면 상단 60% 지점에 나타나 하단 패널과 갹치지 않음
+        let latOffset = 0.00144
+        let center = CLLocationCoordinate2D(
+            latitude: loc.latitude - latOffset,
+            longitude: loc.longitude
+        )
+        withAnimation(.easeOut(duration: 0.3)) {
+            cameraPosition = .camera(MapCamera(
+                centerCoordinate: center,
+                distance: 400,
+                heading: 0,
+                pitch: 0
+            ))
         }
     }
 }

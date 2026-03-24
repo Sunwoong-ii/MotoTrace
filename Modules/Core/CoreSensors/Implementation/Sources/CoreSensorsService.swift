@@ -16,18 +16,19 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     
     private var locationContinuation: AsyncStream<Location>.Continuation?
     private var motionContinuation: AsyncStream<Motion>.Continuation?
-    private lazy var locationStreamValue: AsyncStream<Location> = {
-        AsyncStream { continuation in
-            self.locationContinuation = continuation
-        }
-    }()
-    private lazy var motionStreamValue: AsyncStream<Motion> = {
-        AsyncStream { continuation in
-            self.motionContinuation = continuation
-        }
-    }()
+    private var locationStreamValue: AsyncStream<Location>
+    private var motionStreamValue: AsyncStream<Motion>
     
     override init() {
+        // 초기 스트림 생성
+        let (locStream, locCont) = AsyncStream.makeStream(of: Location.self)
+        locationStreamValue = locStream
+        locationContinuation = locCont
+        
+        let (motStream, motCont) = AsyncStream.makeStream(of: Motion.self)
+        motionStreamValue = motStream
+        motionContinuation = motCont
+        
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
@@ -52,6 +53,17 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     }
     
     func start() {
+        // 재시작 시마다 새 스트림 생성 — 이전 Task가 취소된 후에도 새 소비자가 값을 받을 수 있음
+        let (locStream, locCont) = AsyncStream.makeStream(of: Location.self)
+        locationContinuation?.finish()
+        locationStreamValue = locStream
+        locationContinuation = locCont
+        
+        let (motStream, motCont) = AsyncStream.makeStream(of: Motion.self)
+        motionContinuation?.finish()
+        motionStreamValue = motStream
+        motionContinuation = motCont
+        
         locationManager.startUpdatingLocation()
         startMotionUpdates()
     }

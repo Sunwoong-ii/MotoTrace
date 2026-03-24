@@ -76,6 +76,10 @@ final class TourStore: ObservableObject {
         }
         
         analyzer.reset()
+        // UI 상태 초기화 — 이전 세션 값이 잔류하지 않도록
+        state.liveStats = LiveStats()
+        state.topSpeed = "0"
+        state.topLeanAngle = "0"
         state.routeCoordinates.removeAll()
         
         sensors.requestAlwaysAuthorization()
