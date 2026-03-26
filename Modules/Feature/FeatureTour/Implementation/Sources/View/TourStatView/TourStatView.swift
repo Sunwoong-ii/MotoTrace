@@ -19,7 +19,7 @@ struct TourStatView: View {
     let onStop: () -> Void
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             // 드래그 핸들
             Capsule()
                 .fill(Color.gray.opacity(0.3))
@@ -53,7 +53,7 @@ struct TourStatView: View {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.white)
-                        .frame(width: 56, height: 56)
+                        .frame(width: 52, height: 52)
                         .background(Color.red)
                         .clipShape(RoundedRectangle(cornerRadius: TourDesign.buttonCornerRadius))
                         .shadow(color: Color.red.opacity(0.35), radius: 8, y: 4)
@@ -63,7 +63,7 @@ struct TourStatView: View {
             .padding(.top, 4)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 20)
+        .padding(.bottom, 12)
         .background(
             TourDesign.cardBackground
                 .clipShape(RoundedRectangle(cornerRadius: 16))

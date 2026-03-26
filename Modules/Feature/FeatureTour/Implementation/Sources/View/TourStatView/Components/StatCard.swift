@@ -11,18 +11,11 @@ struct StatCard: View {
     enum StatCardType {
         case topSpeed
         case leanAngle
-        
-        var icon: String {
-            switch self {
-            case .topSpeed: "speedometer"
-            case .leanAngle: "figure.outdoor.cycle"
-            }
-        }
-        
+
         var title: String {
             switch self {
-            case .topSpeed: "TOP"
-            case .leanAngle: "MAX"
+            case .topSpeed: "Top Speed"
+            case .leanAngle: "Max Angle"
             }
         }
         
@@ -45,24 +38,20 @@ struct StatCard: View {
     let value: String
     
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: type.icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(type.accentColor)
-            
+        VStack(spacing: 4) {
             Text(type.title)
                 .font(.system(size: 9, weight: .heavy))
                 .foregroundStyle(type.accentColor)
                 .tracking(0.8)
             
             Text(value + type.suffix)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(TourDesign.textPrimary)
         }
-        .frame(width: 72, height: 80)
+        .frame(width: 70, height: 56)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(type.accentColor.opacity(0.25), lineWidth: 1.5)
+                .stroke(type.accentColor.opacity(0.25), lineWidth: 1)
                 .fill(type.accentColor.opacity(0.04))
         )
     }

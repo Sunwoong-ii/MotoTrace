@@ -52,13 +52,13 @@ struct SpeedGaugeView: View {
                         .foregroundStyle(TourDesign.labelGray)
                 }
             }
-            .frame(width: 60, height: 60)
+            .frame(width: 50, height: 50)
             
             Text("SPEED")
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(TourDesign.labelGray)
         }
-        .padding(10)
+        .padding(8)
         .background(TourDesign.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: TourDesign.cardCornerRadius))
         .shadow(color: .black.opacity(0.08), radius: 10, y: 4)

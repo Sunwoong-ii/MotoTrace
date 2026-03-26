@@ -69,7 +69,7 @@ struct TrackingButton: View {
                     .tracking(1.2)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: 52)
             .background(config.gradient)
             .clipShape(RoundedRectangle(cornerRadius: TourDesign.buttonCornerRadius))
             .shadow(

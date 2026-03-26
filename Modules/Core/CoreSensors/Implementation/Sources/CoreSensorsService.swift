@@ -96,7 +96,12 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     
     private func startMotionUpdates() {
         guard motionManager.isDeviceMotionAvailable else { return }
-        motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] (motion: CMDeviceMotion?, _) in
+        // xTrueNorthZVertical: world-x = 진북, world-y = 서, world-z = 위(NWU 프레임)
+        // GPS heading이 True North 기준이므로 레퍼런스 프레임을 맞춰야 언덕 분리가 정확함
+        motionManager.startDeviceMotionUpdates(
+            using: .xTrueNorthZVertical,
+            to: motionQueue
+        ) { [weak self] (motion: CMDeviceMotion?, _) in
             guard let motion else { return }
             
             // radian -> degree

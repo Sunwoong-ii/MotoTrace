@@ -84,9 +84,14 @@ final class LeanAnalyzer {
         }
 
         // --- 바이크 전진 축(f)을 device frame으로 변환 ---
-        // GPS heading: 0=북, 시계방향 (도) → ENU world frame (East=x, North=y, Up=z)
+        // GPS heading: 0=북, 시계방향 (도)
+        // CMDeviceMotion xTrueNorthZVertical 프레임 = NWU (x=진북, y=서, z=위)
+        // heading h → forwardWorld = (cos(h), -sin(h), 0)
+        //   h=0° (북): (1, 0, 0) = +x ✓
+        //   h=90° (동): (0, -1, 0) = -y ✓  (동 = 서의 반대)
+        //   h=270° (서): (0, 1, 0) = +y ✓
         let hRad = course * .pi / 180.0
-        let forwardWorld = (x: sin(hRad), y: cos(hRad), z: 0.0)
+        let forwardWorld = (x: cos(hRad), y: -sin(hRad), z: 0.0)
 
         // attitude quaternion: device→world. world→device는 켤레(w, -x, -y, -z)
         let q = (w: data.quaternionW, x: data.quaternionX,
@@ -120,9 +125,14 @@ final class LeanAnalyzer {
         let leanRad = atan2(sinA, cosA)
         let leanDeg = leanRad * 180.0 / .pi
 
+        // --- 경사각: 전진 방향으로의 중력 투영 → asin ---
+        // g1d = dot(g1, forwardDevice): 오르막이면 양수, 내리막이면 음수
+        // g1은 단위 벡터이므로 asin(g1d) = 경사각 (도)
+        let pitchDeg = asin(max(-1.0, min(1.0, g1d))) * 180.0 / .pi
+
         currentLeanAngleDegrees = leanDeg
 
-        var result = LeanAnalyzerResult()
+        var result = LeanAnalyzerResult(pitchAngle: pitchDeg)
         if abs(leanDeg) > abs(topLeanAngleDegrees) {
             topLeanAngleDegrees = leanDeg
             result.maxLeanAngleUpdated = leanDeg

@@ -301,7 +301,8 @@ final class TourStore: ObservableObject {
                     location: state.liveStats.location,
                     distance: state.liveStats.distance,
                     duration: state.liveStats.duration,
-                    avgSpeed: state.liveStats.avgSpeed
+                    avgSpeed: state.liveStats.avgSpeed,
+                    inclination: String(format: "%.1f", leanResult.pitchAngle)
                 )
                 state.topLeanAngle = String(format: "%.1f", abs(analyzer.topLeanAngle()))
             }

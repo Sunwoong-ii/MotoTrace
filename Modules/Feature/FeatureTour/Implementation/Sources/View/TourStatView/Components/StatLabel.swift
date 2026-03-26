@@ -33,18 +33,18 @@ struct StatLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(type.title)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 10, weight: .bold))
                 .foregroundStyle(TourDesign.labelGray)
                 .tracking(0.8)
             
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(value)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundStyle(TourDesign.textPrimary)
                 
                 if !type.suffix.isEmpty {
                     Text(type.suffix)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(TourDesign.labelGray)
                 }
             }

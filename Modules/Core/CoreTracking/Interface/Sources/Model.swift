@@ -199,9 +199,12 @@ public struct SpeedAnalyzerResult {
 public struct LeanAnalyzerResult {
     public var maxLeanAngleUpdated: Double?
     public var event: TrackingEvent?
-    
-    public init(maxLeanAngleUpdated: Double? = nil, event: TrackingEvent? = nil) {
+    /// 오르막/내리막 경사각 (도). 양수=오르막, 음수=내리막
+    public var pitchAngle: Double
+
+    public init(maxLeanAngleUpdated: Double? = nil, event: TrackingEvent? = nil, pitchAngle: Double = 0) {
         self.maxLeanAngleUpdated = maxLeanAngleUpdated
         self.event = event
+        self.pitchAngle = pitchAngle
     }
 }

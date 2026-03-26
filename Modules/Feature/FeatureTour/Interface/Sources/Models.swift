@@ -15,6 +15,7 @@ public struct LiveStats {
     public let distance: String       // 총 거리
     public let duration: String       // 총 시간
     public let avgSpeed: String       // 평균 속도
+    public let inclination: String    // 현재 경사각 (°, 양수=오르막)
     
     public init(
         speed: String = "0",
@@ -22,7 +23,8 @@ public struct LiveStats {
         location: Location = Location(latitude: 0, longitude: 0, timestamp: Date()),
         distance: String = "0.0",
         duration: String = "00:00:00",
-        avgSpeed: String = "0"
+        avgSpeed: String = "0",
+        inclination: String = "0"
     ) {
         self.speed = speed
         self.leanAngle = leanAngle
@@ -30,6 +32,7 @@ public struct LiveStats {
         self.distance = distance
         self.duration = duration
         self.avgSpeed = avgSpeed
+        self.inclination = inclination
     }
 }
 

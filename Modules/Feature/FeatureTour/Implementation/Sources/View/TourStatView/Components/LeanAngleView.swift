@@ -66,7 +66,7 @@ struct LeanAngleView: View {
                     }
                 }
             }
-            .frame(width: 60, height: 60)
+            .frame(width: 50, height: 50)
             
             Text("LEAN ANGLE")
                 .font(.system(size: 8, weight: .bold))
@@ -85,7 +85,7 @@ struct LeanAngleView: View {
                     )
             }
         }
-        .padding(10)
+        .padding(8)
         .background(TourDesign.cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: TourDesign.cardCornerRadius))
         .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
