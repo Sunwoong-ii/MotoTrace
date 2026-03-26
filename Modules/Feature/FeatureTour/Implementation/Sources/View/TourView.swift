@@ -182,14 +182,14 @@ private extension TourView {
         Button {
             cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Image(systemName: "location.fill")
                 Text("현재 위치로")
             }
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 12, weight: .bold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
         .background(TourDesign.primaryBlue)
         .clipShape(Capsule())
@@ -204,6 +204,7 @@ private extension TourView {
         VStack(alignment: .leading, spacing: 10) {
             SpeedGaugeView(speed: store.state.liveStats.speed, maxSpeed: 200)
             LeanAngleView(angle: store.state.liveStats.leanAngle)
+            InclinationView(inclination: store.state.liveStats.inclination)
         }
     }
 }
