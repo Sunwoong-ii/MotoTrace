@@ -24,6 +24,9 @@ public struct TourState {
     public var liveStats: LiveStats
     public var routeCoordinates: [CLLocationCoordinate2D]
     
+    /// 새 트래킹 세션 시작마다 갱신 — MapPolyline 캐시 강제 초기화용
+    public var mapSessionId: UUID
+    
     public init(
         tourName: String = "",
         trackingStatus: TrackingStatus = .idle,
@@ -32,7 +35,8 @@ public struct TourState {
         topLeanAngle: String = "0",
         cameraPosition: MapCameraPosition = .automatic,
         liveStats: LiveStats = LiveStats(),
-        routeCoordinates: [CLLocationCoordinate2D] = []
+        routeCoordinates: [CLLocationCoordinate2D] = [],
+        mapSessionId: UUID = UUID()
     ) {
         self.tourName = tourName
         self.trackingStatus = trackingStatus
@@ -42,5 +46,6 @@ public struct TourState {
         self.cameraPosition = cameraPosition
         self.liveStats = liveStats
         self.routeCoordinates = routeCoordinates
+        self.mapSessionId = mapSessionId
     }
 }

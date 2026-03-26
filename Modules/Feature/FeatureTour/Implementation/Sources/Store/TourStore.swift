@@ -81,6 +81,7 @@ final class TourStore: ObservableObject {
         state.topSpeed = "0"
         state.topLeanAngle = "0"
         state.routeCoordinates.removeAll()
+        state.mapSessionId = UUID()  // Map 캐시 강제 초기화
         
         sensors.requestAlwaysAuthorization()
         sensors.start()

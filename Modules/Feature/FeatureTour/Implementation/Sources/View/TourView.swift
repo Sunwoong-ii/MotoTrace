@@ -57,11 +57,15 @@ internal struct TourView: View {
         // Map을 background로 — safe area 무시하여 전체 화면 채움
         .background {
             Map(position: $cameraPosition) {
+                // mapSessionId가 바뀔 때마다 컨텐츠 전체를 재생성 → MapPolyline 캐시 제거
+                let sessionId = store.state.mapSessionId
                 UserAnnotation()
+                    .tag(sessionId)
                 
                 if store.state.routeCoordinates.count >= 2 {
                     MapPolyline(coordinates: store.state.routeCoordinates)
                         .stroke(.blue, lineWidth: 4)
+                        .tag(sessionId)
                 }
             }
             .mapStyle(.standard)
