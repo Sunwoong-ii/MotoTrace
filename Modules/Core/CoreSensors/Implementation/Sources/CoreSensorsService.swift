@@ -73,6 +73,13 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         motionManager.stopDeviceMotionUpdates()
     }
     
+    /// 일시정지 후 재개 — 기존 AsyncStream continuation을 유지한 채 센서만 재시작
+    /// start() 를 호출하면 continuation이 finish되어 타스크 루프가 빠져나가는 버그 발생
+    func resume() {
+        locationManager.startUpdatingLocation()
+        startMotionUpdates()
+    }
+    
     func speedLocationStream() -> AsyncStream<Location> {
         locationStreamValue
     }

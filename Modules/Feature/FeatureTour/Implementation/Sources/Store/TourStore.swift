@@ -94,14 +94,7 @@ final class TourStore: ObservableObject {
             statusRaw: "tracking"
         ))
         
-        // Start periodic stats update (every 1 second)
-        statsUpdateTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-                await self?.updateStats()
-            }
-        }
-        
+        startStatsTimer()
         startSensorTasks(tourId: tourId)
     }
     
@@ -109,6 +102,10 @@ final class TourStore: ObservableObject {
         state.trackingStatus = .paused
         pausedAt = Date()
         sensors.stop()
+        
+        // 일시정지 중 타이머 정지 — 안 멈추면 트래킹 중 시간이 계속 증가함
+        statsUpdateTask?.cancel()
+        statsUpdateTask = nil
         
         analyzer.handlePause()
         
@@ -142,14 +139,23 @@ final class TourStore: ObservableObject {
             statusRaw: "tracking"
         ))
         
-        sensors.start()
+        // resume(): 스트림 재생성 없이 센서만 재시작
+        // start() 호출 시 기존 continuation이 finish 되어 타스크 루프가 빠져나가는 버그 발생
+        sensors.resume()
+
+        // 세션 복구(paused) 후 재개하는 경우: 소비 Task가 아직 없으므로 시작
+        if locationTask == nil, motionTask == nil {
+            startSensorTasks(tourId: tourId)
+        }
+
+        startStatsTimer()
     }
     
     private func stopTracking() {
         state.trackingStatus = .idle
         sensors.stop()
         
-        // Cancel all tasks
+        // 모든 타스크 취소
         locationTask?.cancel()
         motionTask?.cancel()
         statsUpdateTask?.cancel()
@@ -157,11 +163,26 @@ final class TourStore: ObservableObject {
         motionTask = nil
         statsUpdateTask = nil
         
+        // 값을 먼저 캡처 — async Task 내부에서 currentTourId를 읽으면
+        // 빨리 재시작할 때 새 세션 ID로 오염될 수 있음
+        guard let tourId = currentTourId else { return }
+        let capturedStartDate = tourStartDate
+        let capturedPausedAt = pausedAt
+        
+        currentTourId = nil
+        tourStartDate = nil
+        pausedAt = nil
+        
         // Finish tour — 최종 통계 저장
         Task {
-            guard let tourId = currentTourId else { return }
+            // 일시정지 중 종료 시: 일시정지 시점까지만 계산
+            let elapsed: TimeInterval
+            if let pauseStart = capturedPausedAt {
+                elapsed = pauseStart.timeIntervalSince(capturedStartDate ?? Date())
+            } else {
+                elapsed = Date().timeIntervalSince(capturedStartDate ?? Date())
+            }
             
-            let elapsed = Date().timeIntervalSince(tourStartDate ?? Date())
             let stats = analyzer.stats()
             try? await repository.updateTripStats(
                 id: tourId,
@@ -174,9 +195,6 @@ final class TourStore: ObservableObject {
             try? await repository.updateTopSpeed(id: tourId, speed: analyzer.topSpeed())
             try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
             try? await repository.finishTour(id: tourId)
-            
-            currentTourId = nil
-            tourStartDate = nil
             
             // 세션 삭제 — 정상 종료이므로 복구 불필요
             sessionStore.clear()
@@ -212,12 +230,7 @@ final class TourStore: ObservableObject {
             state.trackingStatus = .tracking
             sensors.requestAlwaysAuthorization()
             sensors.start()
-            statsUpdateTask = Task { [weak self] in
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: .seconds(1))
-                    await self?.updateStats()
-                }
-            }
+            startStatsTimer()
             startSensorTasks(tourId: session.tourId)
         } else {
             // 일시정지 상태였으면 UI만 복원, 사용자 액션 대기
@@ -225,6 +238,16 @@ final class TourStore: ObservableObject {
         }
     }
     
+    /// 1초 주기 통계 갱신 타이머 시작
+    private func startStatsTimer() {
+        statsUpdateTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                await self?.updateStats()
+            }
+        }
+    }
+
     private func startSensorTasks(tourId: UUID) {
         locationTask = Task { [weak self] in
             guard let self else { return }
