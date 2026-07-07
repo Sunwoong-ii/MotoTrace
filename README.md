@@ -1,8 +1,18 @@
 # MotoTrace
 
+<img src="docs/motorcycle.svg" width="72" align="right" alt="MotoTrace 로고">
+
 > 오토바이 라이더를 위한 실시간 라이딩 트래킹 iOS 앱
 
 MotoTrace는 라이딩 중 속도, 뱅킹각(린앵글), 급가속/급감속 이벤트를 실시간으로 분석하고, 주행 경로와 통계를 기록하는 애플리케이션입니다.
+
+---
+
+## Preview
+
+| 트래킹 중 | 트래킹 종료 후 |
+|:---:|:---:|
+| <img src="docs/tracking-active.png" width="300" alt="트래킹 중 화면 — 속도·린앵글 게이지와 실시간 경로"> | <img src="docs/tracking-finished.png" width="300" alt="트래킹 종료 후 화면 — 기록 시작 대기 상태"> |
 
 ---
 
