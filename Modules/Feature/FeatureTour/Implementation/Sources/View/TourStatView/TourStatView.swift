@@ -48,7 +48,8 @@ struct TourStatView: View {
             // PAUSE + STOP 버튼
             HStack(spacing: 10) {
                 TrackingButton(status: trackingStatus, action: onPause)
-                
+                    .accessibilityIdentifier("pauseResumeButton")
+
                 Button(action: onStop) {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 16, weight: .bold))
@@ -59,6 +60,7 @@ struct TourStatView: View {
                         .shadow(color: Color.red.opacity(0.35), radius: 8, y: 4)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("stopButton")
             }
             .padding(.top, 4)
         }

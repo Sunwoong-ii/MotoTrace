@@ -10,6 +10,7 @@ import MapKit
 import FeatureTourInterface
 import CoreLocation
 import CoreTrackingInterface
+import Shared
 
 /// 라이딩 트래킹 화면
 internal struct TourView: View {
@@ -21,6 +22,15 @@ internal struct TourView: View {
     private var isActive: Bool {
         store.state.trackingStatus != .idle
     }
+
+    /// Mock 센서 모드에서 카메라가 따라갈 좌표 — 시스템 위치는 가상 경로와 무관하므로 경로 끝을 쓴다
+    private var mockCurrentCoordinate: CLLocationCoordinate2D? {
+        guard LaunchFlags.useMockSensors, isActive else { return nil }
+        return store.state.routeCoordinates.last
+    }
+
+    /// Mock 팔로우 카메라 줌 (미터)
+    private static let mockFollowDistance: Double = 1200
     
     internal init(store: TourStore) {
         _store = StateObject(wrappedValue: store)
@@ -59,9 +69,25 @@ internal struct TourView: View {
             Map(position: $cameraPosition) {
                 // mapSessionId가 바뀔 때마다 컨텐츠 전체를 재생성 → MapPolyline 캐시 제거
                 let sessionId = store.state.mapSessionId
-                UserAnnotation()
+                if let mockCoordinate = mockCurrentCoordinate {
+                    // Mock 트래킹 중엔 시스템 위치(UserAnnotation)가 가상 경로와 무관 → 경로 끝에 마커 표시
+                    Annotation("", coordinate: mockCoordinate) {
+                        ZStack {
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 22, height: 22)
+                            Circle()
+                                .fill(TourDesign.primaryBlue)
+                                .frame(width: 14, height: 14)
+                        }
+                        .shadow(color: .black.opacity(0.25), radius: 3)
+                    }
                     .tag(sessionId)
-                
+                } else {
+                    UserAnnotation()
+                        .tag(sessionId)
+                }
+
                 if store.state.routeCoordinates.count >= 2 {
                     MapPolyline(coordinates: store.state.routeCoordinates)
                         .stroke(.blue, lineWidth: 4)
@@ -77,6 +103,18 @@ internal struct TourView: View {
             guard !active else { return }
             withAnimation(.easeInOut(duration: 0.35)) {
                 cameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
+            }
+        }
+        .onChange(of: store.state.routeCoordinates.count) { _, _ in
+            // Mock 모드 전용 팔로우 — 실 GPS는 .userLocation이 시스템 위치를 따라가므로 관여하지 않음
+            // 사용자가 지도를 팬했으면(positionedByUser) 자동 팔로우를 멈춰 조작을 방해하지 않는다
+            guard let mockCoordinate = mockCurrentCoordinate,
+                  !cameraPosition.positionedByUser else { return }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                cameraPosition = .camera(MapCamera(
+                    centerCoordinate: mockCoordinate,
+                    distance: Self.mockFollowDistance
+                ))
             }
         }
         .task {
@@ -149,7 +187,17 @@ private extension TourView {
 private extension TourView {
     var currentPositionButton: some View {
         Button {
-            cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
+            if let mockCoordinate = mockCurrentCoordinate {
+                // Mock 트래킹 중: 시스템 위치가 아닌 가상 경로 끝으로 센터링 (프로그램 설정 → 자동 팔로우 재개)
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    cameraPosition = .camera(MapCamera(
+                        centerCoordinate: mockCoordinate,
+                        distance: Self.mockFollowDistance
+                    ))
+                }
+            } else {
+                cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
+            }
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "location.fill")
@@ -163,6 +211,7 @@ private extension TourView {
         .background(TourDesign.primaryBlue)
         .clipShape(Capsule())
         .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
+        .accessibilityIdentifier("currentPositionButton")
     }
 }
 
@@ -215,6 +264,7 @@ private extension TourView {
                 TrackingButton(status: .idle) {
                     showNameInput = true
                 }
+                .accessibilityIdentifier("startRecordingButton")
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
