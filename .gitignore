@@ -41,3 +41,7 @@ Tuist/Dependencies/
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
+
+### MCP 테스트 산출물 ###
+# scripts/mockride.sh가 저장하는 스크린샷·로그
+.mcp-artifacts/
