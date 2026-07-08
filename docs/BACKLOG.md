@@ -8,6 +8,8 @@
 - [x] Mock 센서 구현 — 라이딩 없이 트래킹 전체 플로우를 검증할 수 있도록 `-UseMockSensors` launch argument로 가상 주행 데이터(급가속·급감속·뱅킹각 이벤트 포함 시나리오)를 방출하는 `CoreSensorsInterface` 구현체 추가. `MotoTrace-MockRide` 스킴으로 실행 (시뮬레이터에서 트래킹·일시정지·재개·종료·히스토리 저장 검증 완료)
 - [x] Mock 모드 지도 카메라 팔로우 — Mock 트래킹 중 카메라가 가상 경로 끝을 따라가고 커스텀 현재위치 마커 표시 (실 GPS의 `.userLocation` 팔로우는 변경 없음, `LaunchFlags.useMockSensors` 분기)
 - [x] Mock 주행 테스트 자동화 — `scripts/mockride.sh`(run/start/pause/resume/stop/shot/ui) + `.claude/skills/mock-ride` 스킬 + `.mcp-artifacts/` 산출물 디렉터리, 주요 버튼에 accessibilityIdentifier 부여
+- [x] 앱 시작 시 위치 권한 요청 — RootTabView `.task`에서 When-In-Use 선요청, 트래킹 시작 시 Always 승격은 기존 유지 (2단계 전략)
+- [ ] 위치 권한 거부 상태 처리 — `CoreSensorsInterface`에 권한 상태 조회(authorizationStatus) 추가하고, 거부/제한 시 설정 앱 유도 UI 표시
 - [ ] 백그라운드에서 위치·린앵글 수집 정상 여부 검증 — 실기기 백그라운드 상태에서 location/motion 스트림이 끊기지 않고 수집되는지 확인 (CMMotionManager는 백그라운드 제약 있음 — 위치 백그라운드 모드만으로 motion 콜백이 유지되는지가 핵심)
 - [ ] 백그라운드 메모리·배터리 사용량 측정 — 장시간 트래킹 시 Instruments(Allocations/Energy Log) 또는 MetricKit으로 프로파일링, 위치 정확도/모션 주기 튜닝 근거 마련
 - [ ] 깨진 LeanAngleAnalyzer 테스트 2건 수정 — `f7320c1`에서 린앵글 계산이 gravity 벡터 방식으로 바뀌었는데 테스트 픽스처가 rollDegrees만 설정해서 실패 중 (`Modules/Core/CoreTracking/Tests/Sources/LeanAngleAnalyzerTests.swift` L109, L136)

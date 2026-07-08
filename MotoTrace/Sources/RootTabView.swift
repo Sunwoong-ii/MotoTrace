@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppDI
+import CoreSensorsInterface
 import FeatureTour
 import FeatureTourInterface
 import FeatureHistory
@@ -29,5 +30,10 @@ struct RootTabView: View {
             }
         }
         .tint(.blue)
+        .task {
+            // 위치가 핵심 기능이므로 앱 시작 시 미리 When-In-Use 권한 요청
+            // (이미 결정된 상태면 시스템이 무시. Always 승격은 트래킹 시작 시 TourStore가 요청)
+            container.resolve(CoreSensorsInterface.self).requestWhenInUseAuthorization()
+        }
     }
 }
