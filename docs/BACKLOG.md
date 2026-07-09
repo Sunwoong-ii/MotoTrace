@@ -19,6 +19,9 @@
 
 - [ ] 스캐폴딩 스킬화 — `make feature name=X` 후 수동으로 하던 ModuleName.swift case 등록까지 자동화하는 스킬(`.claude/skills/`) 작성
 - [x] 브랜치/PR 기반 git 워크플로 정착 — CLAUDE.md 워크플로 규칙에 반영 (feature/fix 브랜치 → PR(검증 결과 포함) → squash merge, 소규모 docs/chore는 main 직접 허용)
+- [ ] 커스텀 스킬 추가 확충 — mock-ride·스캐폴딩 외에 반복 워크플로 스킬화. 후보: ① 빌드+관련 모듈 테스트+시뮬레이터 확인까지 한 번에 도는 검증 스킬, ② PR 생성 스킬(브랜치 규칙·본문 템플릿·검증 결과 자동 포함), ③ MVI Store 테스트 보일러플레이트 생성 스킬
+- [ ] GitHub MCP 도입 검토 — 현행 gh CLI 방식과 비교해 장단점(토큰 관리, 컨텍스트 비용, PR 리뷰 코멘트 접근성 등) 정리 후 도입 여부 결정. 도입 시 `.mcp.json`에 등록
+- [ ] 검증 분리 — ① 훅: `git commit` 전 자동 빌드+테스트 강제(PreToolUse 훅, `.claude/settings.json`), ② 코드리뷰 서브에이전트: 구현 후 별도 에이전트가 diff를 리뷰·반박하는 패턴 정착 (간단한 훅부터 시작)
 
 ## 발견된 이슈 (조사 필요)
 
