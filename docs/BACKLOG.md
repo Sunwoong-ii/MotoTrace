@@ -29,3 +29,4 @@
 - [ ] Tuist manifest에 FeatureTour → CoreDataStorageInterface 의존성 누락 (빌드 경고 발생 중)
 - [ ] `updateStats()`가 매초 repository에 쓰기 — README의 "30회 업데이트마다 저장"과 불일치 여부 확인
 - [ ] FeatureSettings 개발 — TrackingPolicy 임계값(급가속/뱅킹각/정차 기준)을 설정 화면과 연결
+- [ ] 린앵글 오일러 폴백 → 중력 투영 전환 시 값 불연속 — course 최초 확보 순간 계산 방식이 바뀌며 표시값이 점프할 수 있음(경사 보정 유무 차이). 실주행 영향은 주행 시작 직후 한 번뿐이라 낮음, 필요 시 스무딩 검토

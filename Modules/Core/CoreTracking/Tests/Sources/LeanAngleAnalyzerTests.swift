@@ -35,11 +35,12 @@ final class LeanAngleAnalyzerTests: XCTestCase {
     /// MotionSnapshot 생성 헬퍼
     private func makeMotion(
         gx: Double, gy: Double, gz: Double,
-        qw: Double = 1, qx: Double = 0, qy: Double = 0, qz: Double = 0
+        qw: Double = 1, qx: Double = 0, qy: Double = 0, qz: Double = 0,
+        roll: Double = 0, pitch: Double = 0
     ) -> MotionSnapshot {
         MotionSnapshot(
             timestamp: Date(),
-            rollDegrees: 0, pitchDegrees: 0,
+            rollDegrees: roll, pitchDegrees: pitch,
             userAccelerationX: 0, userAccelerationY: 0, userAccelerationZ: 0,
             gravityX: gx, gravityY: gy, gravityZ: gz,
             quaternionW: qw, quaternionX: qx, quaternionY: qy, quaternionZ: qz
@@ -71,18 +72,70 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                        "첫 데이터는 영점으로 캘리브레이션되어 린앵글이 0이어야 합니다")
     }
 
-    // MARK: - 2. GPS heading 없으면 값 갱신 안 함
+    // MARK: - 2. GPS heading 유실 시 캐시된 전진 축으로 계속 계산
 
-    func test_updateAttitude_GPS_heading_없으면_갱신_안함() {
-        // Given: 캘리브레이션 완료
+    func test_updateAttitude_heading_유실시_캐시된_전진축으로_계산() {
+        // Given: 캘리브레이션 + 유효한 course로 전진 축 캐시 확보
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
         _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
 
-        // When: heading = -1 (유효하지 않음)
-        _ = sut.updateAttitude(makeMotion(gx: 0.5, gy: 0, gz: -0.866), locationSnapshot: makeLocation(course: -1))
+        // When: 정지 등으로 course = -1이 된 상태에서 30° 우측 기울기
+        let half = (30.0 * .pi / 180.0) / 2.0
+        _ = sut.updateAttitude(
+            makeMotion(gx: 0,
+                       gy: -sin(30.0 * .pi / 180.0),
+                       gz: -cos(30.0 * .pi / 180.0),
+                       qw: cos(half), qx: sin(half)),
+            locationSnapshot: makeLocation(course: -1, speedKmh: 0)
+        )
 
-        // Then: 린앵글은 0 유지 (갱신 없음)
-        XCTAssertEqual(sut.currentLeanAngle(), 0.0, accuracy: 0.01,
-                       "GPS heading이 없으면 린앵글이 갱신되지 않아야 합니다")
+        // Then: 캐시된 전진 축으로 린앵글이 계속 계산되어야 함
+        XCTAssertEqual(abs(sut.currentLeanAngle()), 30.0, accuracy: 1.0,
+                       "course가 유실돼도 캐시된 전진 축으로 린앵글이 갱신되어야 합니다")
+    }
+
+    // MARK: - 2-1. course가 한 번도 없으면 오일러 델타 폴백
+
+    func test_updateAttitude_course가_한번도_없으면_roll_델타_폴백() {
+        // Given: course 없이 캘리브레이션 (실내 테스트/주행 시작 전 상황)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1, roll: 5, pitch: 2),
+                               locationSnapshot: makeLocation(course: -1, speedKmh: 0))
+
+        // When: 폰을 25° 기울임 (roll 5→30, pitch 2→12)
+        let result = sut.updateAttitude(
+            makeMotion(gx: 0, gy: -0.42, gz: -0.9, roll: 30, pitch: 12),
+            locationSnapshot: makeLocation(course: -1, speedKmh: 0)
+        )
+
+        // Then: 캘리브레이션 대비 roll/pitch 델타가 반영되어야 함
+        XCTAssertEqual(sut.currentLeanAngle(), 25.0, accuracy: 0.01,
+                       "course가 한 번도 없으면 roll 델타로 린앵글을 계산해야 합니다")
+        XCTAssertEqual(result.pitchAngle, 10.0, accuracy: 0.01,
+                       "course가 한 번도 없으면 pitch 델타로 경사각을 계산해야 합니다")
+    }
+
+    // MARK: - 2-2. 정지 상태에서는 이벤트·최대 린앵글 미기록
+
+    func test_updateAttitude_정지속도에서는_이벤트와_최대린앵글_기록_안함() {
+        // Given: course 없이 캘리브레이션 (정지 상태에서 폰 조작 상황)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1),
+                               locationSnapshot: makeLocation(course: -1, speedKmh: 0))
+
+        // When: 정지 상태(속도 0)에서 폰을 40° 기울임 (임계값 3° 초과)
+        let result = sut.updateAttitude(
+            makeMotion(gx: 0, gy: -0.64, gz: -0.77, roll: 40),
+            locationSnapshot: makeLocation(course: -1, speedKmh: 0)
+        )
+
+        // Then: UI용 현재 앵글은 갱신되지만 이벤트·최대 린앵글은 기록되지 않아야 함
+        XCTAssertEqual(sut.currentLeanAngle(), 40.0, accuracy: 0.01,
+                       "정지 상태에서도 현재 린앵글은 UI용으로 갱신되어야 합니다")
+        XCTAssertNil(result.event,
+                     "정지 속도에서는 린앵글 이벤트가 기록되지 않아야 합니다")
+        XCTAssertNil(result.maxLeanAngleUpdated,
+                     "정지 속도에서는 최대 린앵글이 갱신되지 않아야 합니다")
+        XCTAssertEqual(sut.topLeanAngle(), 0.0, accuracy: 0.01,
+                       "정지 속도에서는 최대 린앵글이 0으로 유지되어야 합니다")
     }
 
     // MARK: - 3. 오른쪽 30도 기울기
