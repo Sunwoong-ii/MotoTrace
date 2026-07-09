@@ -12,13 +12,16 @@
 - [ ] 위치 권한 거부 상태 처리 — `CoreSensorsInterface`에 권한 상태 조회(authorizationStatus) 추가하고, 거부/제한 시 설정 앱 유도 UI 표시
 - [ ] 백그라운드에서 위치·린앵글 수집 정상 여부 검증 — 실기기 백그라운드 상태에서 location/motion 스트림이 끊기지 않고 수집되는지 확인 (CMMotionManager는 백그라운드 제약 있음 — 위치 백그라운드 모드만으로 motion 콜백이 유지되는지가 핵심)
 - [ ] 백그라운드 메모리·배터리 사용량 측정 — 장시간 트래킹 시 Instruments(Allocations/Energy Log) 또는 MetricKit으로 프로파일링, 위치 정확도/모션 주기 튜닝 근거 마련
-- [ ] 깨진 LeanAngleAnalyzer 테스트 2건 수정 — `f7320c1`에서 린앵글 계산이 gravity 벡터 방식으로 바뀌었는데 테스트 픽스처가 rollDegrees만 설정해서 실패 중 (`Modules/Core/CoreTracking/Tests/Sources/LeanAngleAnalyzerTests.swift` L109, L136)
+- [x] 깨진 LeanAngleAnalyzer 테스트 2건 수정 — 실제 원인은 좌표계 불일치: 구현은 CMDeviceMotion xTrueNorthZVertical(NWU)인데 테스트 픽스처가 ENU 가정으로 작성됨. 픽스처를 NWU로 수정, 무의미하게 통과하던 좌우 부호 테스트도 실질 검증하도록 보강
 - [ ] TourStore 단위 테스트 작성 — pause/resume/stop/restore 상태머신 검증 (mock sensors/repository 필요)
 
 ## AI 워크플로 고도화
 
 - [ ] 스캐폴딩 스킬화 — `make feature name=X` 후 수동으로 하던 ModuleName.swift case 등록까지 자동화하는 스킬(`.claude/skills/`) 작성
-- [ ] 브랜치/PR 기반 git 워크플로 정착 — main 직접 커밋 대신 작업 브랜치 + PR (gh CLI 인증 완료 상태)
+- [x] 브랜치/PR 기반 git 워크플로 정착 — CLAUDE.md 워크플로 규칙에 반영 (feature/fix 브랜치 → PR(검증 결과 포함) → squash merge, 소규모 docs/chore는 main 직접 허용)
+- [ ] 커스텀 스킬 추가 확충 — mock-ride·스캐폴딩 외에 반복 워크플로 스킬화. 후보: ① 빌드+관련 모듈 테스트+시뮬레이터 확인까지 한 번에 도는 검증 스킬, ② PR 생성 스킬(브랜치 규칙·본문 템플릿·검증 결과 자동 포함), ③ MVI Store 테스트 보일러플레이트 생성 스킬
+- [ ] GitHub MCP 도입 검토 — 현행 gh CLI 방식과 비교해 장단점(토큰 관리, 컨텍스트 비용, PR 리뷰 코멘트 접근성 등) 정리 후 도입 여부 결정. 도입 시 `.mcp.json`에 등록
+- [x] 검증 분리 — ① 커밋 게이트 훅: `.claude/hooks/require-build-test.sh` + `.claude/settings.json` PreToolUse 훅으로 git commit 전 앱 빌드+변경 모듈 테스트 강제, ② 로컬 리뷰: CLAUDE.md에 "PR 생성 전 /code-review" 규칙 추가 (커스텀 리뷰 에이전트는 내장 /code-review로 충분한지 써본 뒤 판단)
 
 ## 발견된 이슈 (조사 필요)
 

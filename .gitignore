@@ -45,3 +45,6 @@ Tuist/Dependencies/
 ### MCP 테스트 산출물 ###
 # scripts/mockride.sh가 저장하는 스크린샷·로그
 .mcp-artifacts/
+
+### Claude Code 로컬 설정 ###
+.claude/settings.local.json
