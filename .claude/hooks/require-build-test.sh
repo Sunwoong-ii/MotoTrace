@@ -43,7 +43,8 @@ DEST="platform=iOS Simulator,name=${COMMIT_GATE_SIM:-iPhone 17 Pro}"
 LOG_DIR=".mcp-artifacts/commit-gate"
 mkdir -p "$LOG_DIR"
 RUN_ID=$(date +%Y%m%d-%H%M%S)
-ls -1 "$LOG_DIR" | cut -d_ -f1 | sort -ur | sed -n '21,$p' | while read -r old; do
+# .DS_Store 등 비패턴 파일이 섞이면 보존 회수 계산이 어긋나므로 타임스탬프 형식만 센다
+ls -1 "$LOG_DIR" | grep -E '^[0-9]{8}-[0-9]{6}_' | cut -d_ -f1 | sort -ur | sed -n '21,$p' | while read -r old; do
   rm -f "$LOG_DIR/${old}"_*
 done
 
