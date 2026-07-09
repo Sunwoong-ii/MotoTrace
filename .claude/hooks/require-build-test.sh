@@ -32,13 +32,22 @@ if ! printf '%s\n' "$CHANGED" | grep -qE '\.swift$|\.xcconfig$|^Tuist/'; then
 fi
 
 DEST="platform=iOS Simulator,name=${COMMIT_GATE_SIM:-iPhone 17 Pro}"
-LOG=$(mktemp -t commit-gate)
+
+# 게이트 로그는 .mcp-artifacts/commit-gate/에 실행(RUN_ID) 단위로 보존한다
+# — 성공 로그도 남겨 빌드 시간 추이 등을 추적할 수 있게 하고, 최근 20회분만 유지
+LOG_DIR=".mcp-artifacts/commit-gate"
+mkdir -p "$LOG_DIR"
+RUN_ID=$(date +%Y%m%d-%H%M%S)
+ls -1 "$LOG_DIR" | cut -d_ -f1 | sort -ur | sed -n '21,$p' | while read -r old; do
+  rm -f "$LOG_DIR/${old}"_*
+done
 
 # 모듈 테스트는 앱 타겟을 빌드하지 않으므로, 앱 타겟 컴파일 깨짐은 이 빌드만 잡는다 (중복 아님)
+BUILD_LOG="$LOG_DIR/${RUN_ID}_build.log"
 echo "커밋 게이트: 앱 빌드 검증 중..." >&2
 if ! xcodebuild -workspace MotoTrace.xcworkspace -scheme MotoTrace \
-     -destination "$DEST" build >"$LOG" 2>&1; then
-  deny "커밋 게이트: 빌드 실패로 커밋을 차단했습니다. $(grep -E 'error:' "$LOG" | head -5 | tr '\n' ' ') (전체 로그: $LOG)"
+     -destination "$DEST" build >"$BUILD_LOG" 2>&1; then
+  deny "커밋 게이트: 빌드 실패로 커밋을 차단했습니다. $(grep -E 'error:' "$BUILD_LOG" | head -5 | tr '\n' ' ') (전체 로그: $BUILD_LOG)"
 fi
 
 # 변경 파일에서 모듈명 추출 → Tests 타겟이 있는 모듈만 테스트
@@ -46,13 +55,12 @@ SCHEMES=$(printf '%s\n' "$CHANGED" | sed -nE 's#^Modules/[^/]+/([^/]+)/.*#\1#p' 
 for SCHEME in $SCHEMES; do
   TESTS_DIR=$(ls -d Modules/*/"$SCHEME"/Tests 2>/dev/null | head -1)
   [ -z "$TESTS_DIR" ] && continue
+  TEST_LOG="$LOG_DIR/${RUN_ID}_${SCHEME}-test.log"
   echo "커밋 게이트: $SCHEME 테스트 실행 중..." >&2
   if ! xcodebuild -workspace MotoTrace.xcworkspace -scheme "$SCHEME" \
-       -destination "$DEST" test >"$LOG" 2>&1; then
-    deny "커밋 게이트: $SCHEME 테스트 실패로 커밋을 차단했습니다. $(grep -E 'Test Case.*failed|error:' "$LOG" | head -5 | tr '\n' ' ') (전체 로그: $LOG)"
+       -destination "$DEST" test >"$TEST_LOG" 2>&1; then
+    deny "커밋 게이트: $SCHEME 테스트 실패로 커밋을 차단했습니다. $(grep -E 'Test Case.*failed|error:' "$TEST_LOG" | head -5 | tr '\n' ' ') (전체 로그: $TEST_LOG)"
   fi
 done
 
-# 성공 시 로그 정리 (실패 시에는 디버깅용으로 deny 사유에 경로를 남기고 보존)
-rm -f "$LOG"
 exit 0
