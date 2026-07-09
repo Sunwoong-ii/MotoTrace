@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild -workspace *)",
+      "Bash(scripts/mockride.sh *)",
+      "Bash(make generate)",
+      "mcp__XcodeBuildMCP__session_show_defaults",
+      "mcp__XcodeBuildMCP__session_set_defaults",
+      "mcp__XcodeBuildMCP__discover_projs",
+      "mcp__XcodeBuildMCP__list_schemes",
+      "mcp__XcodeBuildMCP__list_sims",
+      "mcp__XcodeBuildMCP__show_build_settings",
+      "mcp__XcodeBuildMCP__build_sim",
+      "mcp__XcodeBuildMCP__test_sim",
+      "mcp__XcodeBuildMCP__build_run_sim",
+      "mcp__XcodeBuildMCP__boot_sim",
+      "mcp__XcodeBuildMCP__open_sim",
+      "mcp__XcodeBuildMCP__install_app_sim",
+      "mcp__XcodeBuildMCP__launch_app_sim",
+      "mcp__XcodeBuildMCP__stop_app_sim",
+      "mcp__XcodeBuildMCP__get_app_bundle_id",
+      "mcp__XcodeBuildMCP__screenshot",
+      "mcp__XcodeBuildMCP__snapshot_ui"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/require-build-test.sh",
+            "timeout": 900,
+            "statusMessage": "커밋 게이트: 빌드+테스트 검증 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
