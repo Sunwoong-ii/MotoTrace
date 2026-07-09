@@ -50,6 +50,11 @@ xcodebuild -workspace MotoTrace.xcworkspace -scheme <모듈명> \
   - 머지는 squash merge, 머지 후 브랜치 삭제
   - **예외**: 문서·설정 한두 파일 수준의 `docs:`/`chore:` 커밋은 main 직접 커밋 허용
   - PR 생성·머지도 커밋과 동일하게 사전 확인 규칙을 적용한다 (명시적 승인 후 실행)
+- **병렬 세션은 워크트리 슬롯으로 분리**: 용도별 고정 워크트리에서 작업하고, 한 슬롯에는 세션 하나만 붙는다 — 미커밋 변경이 브랜치 전환에 딸려가는 사고 방지
+  - 슬롯 구성: `MotoTrace/`=main 전용(체크아웃 변경 금지, pull·소규모 docs 커밋용), `MotoTrace-feature/`=feature/* 슬롯, `MotoTrace-fix/`=fix/* 슬롯, `MotoTrace-ai-workflow/`=AI 워크플로 슬롯
+  - 슬롯은 한 번에 한 브랜치를 체크아웃한다. 작업 없는 슬롯은 detached HEAD(main 시점)로 대기
+  - 현재 위치·슬롯 현황 확인은 `git worktree list`. 새 슬롯을 만들면 `make generate` 필요 (`.xcworkspace`는 gitignore 대상이라 워크트리에 없음)
+  - 여러 슬롯에서 동시에 빌드/시뮬레이터 테스트를 돌리지 않는다 (시뮬레이터·CPU 경합)
 - **계획–실행 분리**: 규모 있는 작업은 플랜 모드로 계획을 먼저 승인받은 뒤 구현한다
 - **커밋은 반드시 사전 확인**: `git add`/`git commit` 전에 커밋 메시지와 대상 파일을 보여주고 명시적 승인을 받는다. 계획에 커밋이 포함돼 있었어도 예외 없음
 - **커밋 컨벤션**: 한글 메시지, prefix는 `feat:` `fix:` `docs:` `test:` `chore:`
