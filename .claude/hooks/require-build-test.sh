@@ -18,8 +18,13 @@ deny() {
   exit 0
 }
 
+# 세션 cwd를 우선한다 — 워크트리 세션에서 CLAUDE_PROJECT_DIR은 본 체크아웃을
+# 가리키므로, 그걸 쓰면 다른 워크트리(다른 세션의 작업물)를 검증하게 된다
+PROJECT_DIR=$(printf '%s' "$INPUT" | jq -r '.cwd // empty')
+if [ -z "$PROJECT_DIR" ] || [ ! -d "$PROJECT_DIR" ]; then
+  PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+fi
 # 디렉터리 진입 실패 시 게이트를 건너뛰면(fail-open) 검증 없이 커밋되므로 반드시 차단한다
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(printf '%s' "$INPUT" | jq -r '.cwd // "."')}"
 cd "$PROJECT_DIR" || deny "커밋 게이트: 프로젝트 디렉터리($PROJECT_DIR) 진입 실패 — 검증 불가로 커밋을 차단합니다."
 
 # 변경 파일 수집: "git add X && git commit" 복합 명령은 훅 시점에 아직 스테이징 전이므로
