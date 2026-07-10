@@ -381,7 +381,8 @@ final class TourStore: ObservableObject {
     
     private func saveLeanResult(_ result: LeanAnalyzerResult, tourId: UUID) async {
         if let maxLean = result.maxLeanAngleUpdated {
-            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: maxLean)
+            // 왼쪽 기울기는 음수로 오므로 저장은 크기 기준으로 통일 (종료 시 저장 경로와 동일)
+            try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(maxLean))
         }
         
         if let event = result.event {

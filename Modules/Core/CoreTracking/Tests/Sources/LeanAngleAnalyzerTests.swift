@@ -114,9 +114,9 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                        "course가 한 번도 없으면 pitch 델타로 경사각을 계산해야 합니다")
     }
 
-    // MARK: - 2-2. 정지 상태에서는 이벤트·최대 린앵글 미기록
+    // MARK: - 2-2. 정지 상태에서는 이벤트만 미기록, 최대 린앵글은 갱신
 
-    func test_updateAttitude_정지속도에서는_이벤트와_최대린앵글_기록_안함() {
+    func test_updateAttitude_정지속도에서는_이벤트_미기록_최대린앵글은_갱신() {
         // Given: course 없이 캘리브레이션 (정지 상태에서 폰 조작 상황)
         _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1),
                                locationSnapshot: makeLocation(course: -1, speedKmh: 0))
@@ -127,15 +127,38 @@ final class LeanAngleAnalyzerTests: XCTestCase {
             locationSnapshot: makeLocation(course: -1, speedKmh: 0)
         )
 
-        // Then: UI용 현재 앵글은 갱신되지만 이벤트·최대 린앵글은 기록되지 않아야 함
+        // Then: 현재 앵글과 최대 린앵글은 갱신되고, 이벤트만 기록되지 않아야 함
         XCTAssertEqual(sut.currentLeanAngle(), 40.0, accuracy: 0.01,
-                       "정지 상태에서도 현재 린앵글은 UI용으로 갱신되어야 합니다")
+                       "정지 상태에서도 현재 린앵글은 갱신되어야 합니다")
+        XCTAssertEqual(sut.topLeanAngle(), 40.0, accuracy: 0.01,
+                       "정지 상태에서도 최대 린앵글은 현재 앵글을 따라가야 합니다")
+        XCTAssertEqual(result.maxLeanAngleUpdated ?? 0, 40.0, accuracy: 0.01,
+                       "최대 린앵글 갱신이 결과에 포함되어야 합니다")
         XCTAssertNil(result.event,
                      "정지 속도에서는 린앵글 이벤트가 기록되지 않아야 합니다")
-        XCTAssertNil(result.maxLeanAngleUpdated,
-                     "정지 속도에서는 최대 린앵글이 갱신되지 않아야 합니다")
-        XCTAssertEqual(sut.topLeanAngle(), 0.0, accuracy: 0.01,
-                       "정지 속도에서는 최대 린앵글이 0으로 유지되어야 합니다")
+    }
+
+    // MARK: - 2-3. 주행 속도에서는 이벤트 기록
+
+    func test_updateAttitude_주행속도에서_임계값_초과시_이벤트_기록() {
+        // Given: 캘리브레이션 + 유효한 course
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+
+        // When: 주행 속도(60km/h)에서 30° 우측 기울기 (임계값 3° 초과)
+        let half = (30.0 * .pi / 180.0) / 2.0
+        let result = sut.updateAttitude(
+            makeMotion(gx: 0,
+                       gy: -sin(30.0 * .pi / 180.0),
+                       gz: -cos(30.0 * .pi / 180.0),
+                       qw: cos(half), qx: sin(half)),
+            locationSnapshot: makeLocation(course: 0, speedKmh: 60)
+        )
+
+        // Then: 이벤트와 최대 린앵글 모두 기록되어야 함
+        XCTAssertNotNil(result.event,
+                        "주행 속도에서 임계값을 넘으면 이벤트가 기록되어야 합니다")
+        XCTAssertNotNil(result.maxLeanAngleUpdated,
+                        "주행 속도에서 최대 린앵글이 갱신되어야 합니다")
     }
 
     // MARK: - 3. 오른쪽 30도 기울기
