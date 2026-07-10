@@ -34,8 +34,10 @@ internal struct TourView: View {
     
     internal init(store: TourStore) {
         _store = StateObject(wrappedValue: store)
+        // followsHeading: false — 지도는 항상 북쪽 고정(north-up). 헤딩 팔로우를 켜면
+        // 폰 방향대로 지도가 회전해 기본 세팅(북쪽 고정)과 어긋난다
         _cameraPosition = State(initialValue: .userLocation(
-            followsHeading: true,
+            followsHeading: false,
             fallback: .automatic
         ))
     }
@@ -102,7 +104,7 @@ internal struct TourView: View {
         .onChange(of: isActive) { _, active in
             guard !active else { return }
             withAnimation(.easeInOut(duration: 0.35)) {
-                cameraPosition = .userLocation(followsHeading: true, fallback: .automatic)
+                cameraPosition = .userLocation(followsHeading: false, fallback: .automatic)
             }
         }
         .onChange(of: store.state.routeCoordinates.count) { _, _ in
