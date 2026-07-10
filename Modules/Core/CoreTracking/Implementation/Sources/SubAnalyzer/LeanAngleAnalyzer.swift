@@ -157,14 +157,15 @@ final class LeanAnalyzer {
         currentLeanAngleDegrees = leanDeg
 
         var result = LeanAnalyzerResult(pitchAngle: pitchDeg)
-        // 정지 중 폰 조작(거치 해제, 손 테스트 등)으로 생긴 기울기가
-        // 투어 기록(이벤트·최대 린앵글)을 오염시키지 않도록 주행 속도일 때만 기록한다
-        guard locationSnapshot.speedKmh >= thresholds.stopSpeedKmh else {
-            return result
-        }
+        // 최대 린앵글은 현재 앵글을 항상 따라간다 — 정지 테스트에서도 UI가 반응해야 함
         if abs(leanDeg) > abs(topLeanAngleDegrees) {
             topLeanAngleDegrees = leanDeg
             result.maxLeanAngleUpdated = leanDeg
+        }
+        // 이벤트는 정지 중 폰 조작(거치 해제 등)으로 인한 스팸 기록을 막기 위해
+        // 주행 속도일 때만 남긴다
+        guard locationSnapshot.speedKmh >= thresholds.stopSpeedKmh else {
+            return result
         }
         if abs(leanDeg) >= thresholds.minLeanAngleDegrees {
             result.event = TrackingEvent(
