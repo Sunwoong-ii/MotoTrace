@@ -1,8 +1,13 @@
 {
   "permissions": {
+    "additionalDirectories": [
+      "/Users/kim-sunwoong/Desktop/MotoTrace"
+    ],
     "allow": [
       "Bash(xcodebuild -workspace *)",
       "Bash(scripts/mockride.sh *)",
+      "Bash(/Users/kim-sunwoong/Desktop/MotoTrace/MotoTrace-feature/scripts/mockride.sh *)",
+      "Bash(/Users/kim-sunwoong/Desktop/MotoTrace/MotoTrace-fix/scripts/mockride.sh *)",
       "Bash(make generate)",
       "mcp__XcodeBuildMCP__session_show_defaults",
       "mcp__XcodeBuildMCP__session_set_defaults",
