@@ -13,6 +13,9 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     private let locationManager = CLLocationManager()
     private let motionManager = CMMotionManager()
     private let motionQueue = OperationQueue()
+
+    // 백그라운드 수집 검증용 계측 (docs/BACKLOG.md)
+    private let instrumentation = CoreSensorsInstrumentation()
     
     private var locationContinuation: AsyncStream<Location>.Continuation?
     private var motionContinuation: AsyncStream<Motion>.Continuation?
@@ -110,11 +113,13 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
             to: motionQueue
         ) { [weak self] (motion: CMDeviceMotion?, _) in
             guard let motion else { return }
-            
+
             // radian -> degree
             let roll = motion.attitude.roll * 180.0 / .pi
             let pitch = motion.attitude.pitch * 180.0 / .pi
             let yaw = motion.attitude.yaw * 180.0 / .pi
+
+            self?.instrumentation.recordMotionCallback(rollDegrees: roll, yawDegrees: yaw)
             let acceleration = motion.userAcceleration
             let gravity = motion.gravity
             let q = motion.attitude.quaternion
@@ -147,6 +152,11 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         let speedKmh = speedMetersPerSecond * 3.6
         // course: 유효하지 않으면 -1
         let course = location.course >= 0 ? location.course : -1
+
+        instrumentation.recordLocationCallback(
+            speedKmh: speedKmh,
+            horizontalAccuracy: location.horizontalAccuracy
+        )
         locationContinuation?.yield(
             Location(
                 latitude: location.coordinate.latitude,
