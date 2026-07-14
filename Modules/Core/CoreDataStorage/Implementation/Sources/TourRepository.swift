@@ -82,32 +82,38 @@ public actor TourRepository: TourRepositoryInterface {
         if !locationBuffer.isEmpty {
             try await flushLocationBuffer(to: id)
         }
-        
+
+        // 최종 통계는 30회 스로틀을 우회하고 무조건 저장 — 아니면 마지막 체크포인트 값으로 남는다
         if let latestTripStats {
-            try await updateTripStats(id: id, tripStats: latestTripStats)
+            try saveTripStats(id: id, tripStats: latestTripStats)
         }
-        
+
         statUpdateCount = 0
         latestTripStats = nil
     }
-    
-    // 주행 통계 (시간, 거리)
+
+    // 주행 통계 (시간, 거리) — 30회마다 저장 (쓰기 스로틀)
     public func updateTripStats(
         id: UUID,
         tripStats: TripStats
     ) async throws {
         latestTripStats = tripStats
         statUpdateCount += 1
-        
-        guard statUpdateCount > statsSaveInterval,
-              let tour = try fetchTourEntity(id: id) else { return }
-        
+
+        guard statUpdateCount >= statsSaveInterval else { return }
+
+        statUpdateCount = 0
+        try saveTripStats(id: id, tripStats: tripStats)
+    }
+
+    /// 스로틀 없이 즉시 저장 (주기 저장·최종 저장 공용)
+    private func saveTripStats(id: UUID, tripStats: TripStats) throws {
+        guard let tour = try fetchTourEntity(id: id) else { return }
+
         tour.duration = tripStats.duration
         tour.distance = tripStats.distance
         tour.avgSpeed = tripStats.avgSpeed
-        
-        statUpdateCount = 0
-        
+
         try modelContext.save()
     }
     
@@ -199,20 +205,14 @@ public actor TourRepository: TourRepositoryInterface {
     }
     
     public func fetchTour(id: UUID) async throws -> TourRecordDTO? {
-        let descriptor = FetchDescriptor<TourRecord>()
-        let records = try modelContext.fetch(descriptor)
-        
-        return records.first.map { convertToDTO($0) }
+        try fetchTourEntity(id: id).map { convertToDTO($0) }
     }
-    
-    public func deleteTour(id: UUID) async throws {
-        let descriptor = FetchDescriptor<TourRecord>()
-        let records = try modelContext.fetch(descriptor)
 
-        if let record = records.first {
-             modelContext.delete(record)
-             try modelContext.save()
-        }
+    public func deleteTour(id: UUID) async throws {
+        guard let record = try fetchTourEntity(id: id) else { return }
+        // locations/events는 .cascade delete rule이라 하위 정리 자동
+        modelContext.delete(record)
+        try modelContext.save()
     }
     
     private func convertToDTO(_ record: TourRecord) -> TourRecordDTO {

@@ -38,10 +38,20 @@ final class TrackingAnalyzer: TrackingAnalyzerInterface {
         return leanAnalyzer.updateAttitude(data, locationSnapshot: recentLocation)
     }
     
-    func updateAcceleration(_ data: MotionSnapshot) {
-        speedAnalyzer.updateAcceleration(data)
+    func restoreStats(
+        movingTimeSeconds: TimeInterval,
+        movingDistanceKm: Double,
+        topSpeedKmh: Double,
+        topLeanAngleDegrees: Double
+    ) {
+        speedAnalyzer.restoreStats(
+            movingTimeSeconds: movingTimeSeconds,
+            movingDistanceKm: movingDistanceKm,
+            topSpeedKmh: topSpeedKmh
+        )
+        leanAnalyzer.restoreTopLeanAngle(topLeanAngleDegrees)
     }
-    
+
     // MARK: - Stats & Configuration
     
     func stats() -> TourStats {

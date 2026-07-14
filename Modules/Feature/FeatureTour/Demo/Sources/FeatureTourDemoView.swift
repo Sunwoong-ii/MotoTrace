@@ -21,9 +21,9 @@ struct FeatureTourDemoView: View {
     }
     
     var body: some View {
-        TourFeatureAssembler.assemble(
+        TourAssembler.assemble(
             container: container,
-            initialState: RidingState()
+            initialState: TourState()
         )
     }
 }

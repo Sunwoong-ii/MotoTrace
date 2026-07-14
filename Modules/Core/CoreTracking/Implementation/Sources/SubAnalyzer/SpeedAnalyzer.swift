@@ -9,11 +9,6 @@ import CoreTrackingInterface
 
 final class SpeedAnalyzer {
     
-    private struct MotionTrigger {
-        let timestamp: Date
-        let accelerationKmhPerSec: Double
-    }
-    
     private enum ActiveSpeedEvent {
         case acceleration(start: LocationSnapshot)
         case deceleration(start: LocationSnapshot)
@@ -85,13 +80,6 @@ final class SpeedAnalyzer {
     }
     
     // MARK: - Private Helper Methods
-    
-    private func updateSpeedTracking(_ snapshot: LocationSnapshot) {
-        currentSpeedKmh = snapshot.speedKmh
-        if snapshot.speedKmh > topSpeedKmh {
-            topSpeedKmh = snapshot.speedKmh
-        }
-    }
     
     private func calculateAcceleration(
         current: LocationSnapshot,
@@ -231,20 +219,17 @@ final class SpeedAnalyzer {
         self.thresholds = thresholds
     }
     
-    func updateAcceleration(_ data: MotionSnapshot) {
-        let accelerationG = sqrt(
-            data.userAccelerationX * data.userAccelerationX +
-            data.userAccelerationY * data.userAccelerationY +
-            data.userAccelerationZ * data.userAccelerationZ
-        )
-        
-        let gravityMetersPerSecondSquared = 9.81
-        let metersPerSecondToKmh = 3.6
-        let accelerationKmhPerSec = accelerationG *
-        gravityMetersPerSecondSquared *
-        metersPerSecondToKmh
+    /// 세션 복구 시 이전 누적값 시딩 — 이후 updateSpeed가 이 값에 이어서 누적한다
+    func restoreStats(
+        movingTimeSeconds: TimeInterval,
+        movingDistanceKm: Double,
+        topSpeedKmh: Double
+    ) {
+        self.movingTimeSeconds = movingTimeSeconds
+        self.movingDistanceKm = movingDistanceKm
+        self.topSpeedKmh = topSpeedKmh
     }
-    
+
     func reset() {
         recentSnapshots = []
         movingTimeSeconds = 0

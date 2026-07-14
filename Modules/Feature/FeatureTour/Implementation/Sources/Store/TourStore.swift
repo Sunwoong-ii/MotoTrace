@@ -219,6 +219,17 @@ final class TourStore: ObservableObject {
         state.tourName = tour.tourName  // tourName은 repository에서 가져옴
         state.topSpeed = String(format: "%.0f", tour.topSpeed)
         state.topLeanAngle = String(format: "%.1f", tour.maxLeanAngle)
+
+        // analyzer 누적값 시딩 — 앱 재시작으로 소실된 통계를 DB 체크포인트로 복원
+        // (안 하면 updateStats()가 0부터 센 값으로 DB를 덮어씀)
+        // movingTime은 DB에 없으므로 avgSpeed 역산으로 복원 (stats() 계산의 역함수)
+        let movingTimeSeconds = tour.avgSpeed > 0 ? tour.distance / tour.avgSpeed * 3600 : 0
+        analyzer.restoreStats(
+            movingTimeSeconds: movingTimeSeconds,
+            movingDistanceKm: tour.distance,
+            topSpeedKmh: tour.topSpeed,
+            topLeanAngleDegrees: tour.maxLeanAngle
+        )
         
         // 지도에 이전 경로 복원
         state.routeCoordinates = tour.locations.map {
@@ -243,7 +254,7 @@ final class TourStore: ObservableObject {
         statsUpdateTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(1))
-                await self?.updateStats()
+                self?.updateStats()
             }
         }
     }
@@ -314,7 +325,6 @@ final class TourStore: ObservableObject {
                     quaternionZ: motion.quaternionZ
                 )
                 
-                analyzer.updateAcceleration(attitudeData)
                 let leanResult = analyzer.updateAttitude(attitudeData)
                 await saveLeanResult(leanResult, tourId: tourId)
                 

@@ -18,7 +18,7 @@ public final class TourRecord {
     /// 투어 총 시간 (초)
     var duration: TimeInterval
     
-    /// 투어 총 거리 (미터)
+    /// 투어 총 거리 (km) — SpeedAnalyzer.movingDistanceKm 값이 그대로 저장된다
     var distance: Double
     
     /// 평균 속도 (km/h)
