@@ -29,7 +29,24 @@ struct HistoryDetailView: View {
                     MapPolyline(coordinates: store.state.routeCoordinates)
                         .stroke(.blue, lineWidth: 4)
                 }
-                
+
+                // 이벤트 마커 — 출발/도착보다 먼저 선언해 겹칠 때 출발/도착이 위에 오게 한다
+                ForEach(store.state.eventMarkers) { marker in
+                    Annotation("", coordinate: marker.coordinate) {
+                        HStack(spacing: 2) {
+                            Text(verbatim: marker.emoji)
+                                .font(.system(size: 11))
+                            Text(marker.displayValue)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.primary)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(.ultraThinMaterial, in: Capsule())
+                    }
+                    .annotationTitles(.hidden)
+                }
+
                 // 시작점
                 if let first = store.state.routeCoordinates.first {
                     Annotation("출발", coordinate: first) {
@@ -163,6 +180,19 @@ private extension HistoryDetailView {
             }
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Event Marker 표현
+
+private extension RideEventMarker {
+    // 이모지 매칭은 프레젠테이션 관심사라 State가 아니라 View 쪽에 둔다
+    var emoji: String {
+        switch type {
+        case .rapidAcceleration: "🚀"
+        case .rapidDeceleration: "🛑"
+        case .leanAngle: "🏍️"
+        }
     }
 }
 

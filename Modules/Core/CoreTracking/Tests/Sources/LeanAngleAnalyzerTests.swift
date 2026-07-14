@@ -57,6 +57,13 @@ final class LeanAngleAnalyzerTests: XCTestCase {
         )
     }
 
+    /// 우측 기울기 degrees°에 해당하는 gravity+quaternion 스냅샷 (전진축=북 기준, 0=직립)
+    private func leanMotion(degrees: Double) -> MotionSnapshot {
+        let rad = degrees * .pi / 180.0
+        let half = rad / 2.0
+        return makeMotion(gx: 0, gy: -sin(rad), gz: -cos(rad), qw: cos(half), qx: sin(half))
+    }
+
     // MARK: - 1. 영점 캘리브레이션
 
     func test_updateAttitude_첫데이터_영점_캘리브레이션() {
@@ -138,27 +145,33 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                      "정지 속도에서는 린앵글 이벤트가 기록되지 않아야 합니다")
     }
 
-    // MARK: - 2-3. 주행 속도에서는 이벤트 기록
+    // MARK: - 2-3. 주행 속도에서는 코너 종료 시 이벤트 기록
 
-    func test_updateAttitude_주행속도에서_임계값_초과시_이벤트_기록() {
+    func test_updateAttitude_주행속도에서_코너종료시_이벤트_기록() {
         // Given: 캘리브레이션 + 유효한 course
         _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
 
-        // When: 주행 속도(60km/h)에서 30° 우측 기울기 (임계값 3° 초과)
-        let half = (30.0 * .pi / 180.0) / 2.0
-        let result = sut.updateAttitude(
-            makeMotion(gx: 0,
-                       gy: -sin(30.0 * .pi / 180.0),
-                       gz: -cos(30.0 * .pi / 180.0),
-                       qw: cos(half), qx: sin(half)),
+        // When: 주행 속도(60km/h)에서 30° 우측 기울기 (임계값 3° 초과) — 에피소드 시작
+        let inCorner = sut.updateAttitude(
+            leanMotion(degrees: 30),
             locationSnapshot: makeLocation(course: 0, speedKmh: 60)
         )
 
-        // Then: 이벤트와 최대 린앵글 모두 기록되어야 함
-        XCTAssertNotNil(result.event,
-                        "주행 속도에서 임계값을 넘으면 이벤트가 기록되어야 합니다")
-        XCTAssertNotNil(result.maxLeanAngleUpdated,
+        // Then: 에피소드 진행 중에는 이벤트가 없고 최대 린앵글만 갱신
+        XCTAssertNil(inCorner.event,
+                     "코너 진행 중에는 이벤트가 방출되지 않아야 합니다")
+        XCTAssertNotNil(inCorner.maxLeanAngleUpdated,
                         "주행 속도에서 최대 린앵글이 갱신되어야 합니다")
+
+        // When: 임계값 아래로 복귀 (코너 종료)
+        let cornerExit = sut.updateAttitude(
+            leanMotion(degrees: 0),
+            locationSnapshot: makeLocation(course: 0, speedKmh: 60)
+        )
+
+        // Then: 코너 종료 시점에 이벤트 1건 방출
+        XCTAssertNotNil(cornerExit.event,
+                        "코너 종료 시점에 이벤트가 방출되어야 합니다")
     }
 
     // MARK: - 2-4. 세션 복구 시딩 후 더 작은 기울기는 최대 린앵글 미갱신
@@ -294,5 +307,123 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                           "기울기 입력이 0이 아닌 린앵글로 계산되어야 합니다")
         XCTAssertEqual(rightLean, -leftLean, accuracy: 0.1,
                        "오른쪽과 왼쪽 기울기는 크기는 같고 부호가 반대여야 합니다")
+    }
+
+    // MARK: - 7. 코너 에피소드 — 코너당 피크 이벤트 1건
+
+    func test_코너에피소드_기울기변화하는_한코너는_피크값_이벤트_1건() {
+        // Given: 캘리브레이션 후 한 코너 안에서 기울기가 10° → 38°(피크, 65km/h) → 20°로 변화
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        var events: [TrackingEvent] = []
+
+        for (degrees, speed) in [(10.0, 60.0), (38.0, 65.0), (20.0, 55.0)] {
+            let result = sut.updateAttitude(
+                leanMotion(degrees: degrees),
+                locationSnapshot: makeLocation(course: 0, speedKmh: speed)
+            )
+            if let event = result.event { events.append(event) }
+        }
+
+        // When: 임계값 아래로 복귀 (코너 종료)
+        let exit = sut.updateAttitude(leanMotion(degrees: 0), locationSnapshot: makeLocation(course: 0))
+        if let event = exit.event { events.append(event) }
+
+        // Then: 이벤트는 1건, 값은 피크 시점의 각도·속도
+        XCTAssertEqual(events.count, 1,
+                       "한 코너에서는 이벤트가 1건만 방출되어야 합니다")
+        XCTAssertEqual(abs(events.first?.leanAngle ?? 0), 38.0, accuracy: 1.0,
+                       "이벤트는 피크 시점의 린앵글이어야 합니다")
+        XCTAssertEqual(events.first?.startSpeedKmh ?? 0, 65.0, accuracy: 0.001,
+                       "이벤트는 피크 시점의 속도여야 합니다")
+    }
+
+    func test_코너에피소드_임계값미만_유지시_이벤트_없음() {
+        // Given: 캘리브레이션
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+
+        // When: 임계값(3°) 미만 기울기만 반복
+        let r1 = sut.updateAttitude(leanMotion(degrees: 1), locationSnapshot: makeLocation(course: 0))
+        let r2 = sut.updateAttitude(leanMotion(degrees: 2), locationSnapshot: makeLocation(course: 0))
+        let r3 = sut.updateAttitude(leanMotion(degrees: 0), locationSnapshot: makeLocation(course: 0))
+
+        // Then
+        XCTAssertNil(r1.event); XCTAssertNil(r2.event)
+        XCTAssertNil(r3.event, "임계값을 넘은 적이 없으면 이벤트가 방출되지 않아야 합니다")
+    }
+
+    func test_코너에피소드_코너_두번이면_이벤트_2건() {
+        // Given: 캘리브레이션
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        var events: [TrackingEvent] = []
+
+        // When: 코너1(30°) → 직립 → 코너2(20°) → 직립
+        for degrees in [30.0, 0.0, 20.0, 0.0] {
+            let result = sut.updateAttitude(
+                leanMotion(degrees: degrees),
+                locationSnapshot: makeLocation(course: 0)
+            )
+            if let event = result.event { events.append(event) }
+        }
+
+        // Then: 코너마다 1건씩 총 2건
+        XCTAssertEqual(events.count, 2,
+                       "직립 구간으로 분리된 코너 두 개는 이벤트 2건이어야 합니다")
+        XCTAssertEqual(abs(events[0].leanAngle ?? 0), 30.0, accuracy: 1.0)
+        XCTAssertEqual(abs(events[1].leanAngle ?? 0), 20.0, accuracy: 1.0)
+    }
+
+    func test_코너에피소드_경계노이즈로_임계값_살짝_내려가도_한코너로_유지() {
+        // Given: 캘리브레이션 후 코너 진입 (임계값 3°, 이탈 히스테리시스 하한 1.5°)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        var events: [TrackingEvent] = []
+
+        // When: 30° → 2°(임계값 아래지만 이탈 하한 위, 경계 노이즈) → 30° → 0°(진짜 종료)
+        for degrees in [30.0, 2.0, 30.0, 0.0] {
+            let result = sut.updateAttitude(
+                leanMotion(degrees: degrees),
+                locationSnapshot: makeLocation(course: 0)
+            )
+            if let event = result.event { events.append(event) }
+        }
+
+        // Then: 노이즈로 쪼개지지 않고 한 코너 이벤트 1건
+        XCTAssertEqual(events.count, 1,
+                       "임계값 언저리 노이즈로 한 코너가 여러 이벤트로 쪼개지면 안 됩니다")
+        XCTAssertEqual(abs(events.first?.leanAngle ?? 0), 30.0, accuracy: 1.0)
+    }
+
+    func test_코너에피소드_정차로_속도이탈시_피크_방출() {
+        // Given: 캘리브레이션 후 코너 진행 중 (30°, 60km/h)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        let inCorner = sut.updateAttitude(leanMotion(degrees: 30),
+                                          locationSnapshot: makeLocation(course: 0, speedKmh: 60))
+        XCTAssertNil(inCorner.event)
+
+        // When: 기울기 유지한 채 정차 속도(stopSpeedKmh 미만)로 떨어짐
+        let stopped = sut.updateAttitude(leanMotion(degrees: 30),
+                                         locationSnapshot: makeLocation(course: 0, speedKmh: 0))
+
+        // Then: 에피소드가 종료돼 피크 이벤트가 방출되어야 함 (주행 종료 시 코너 유실 방지)
+        XCTAssertNotNil(stopped.event,
+                        "정차로 에피소드가 끝나면 피크 이벤트가 방출되어야 합니다")
+        XCTAssertEqual(abs(stopped.event?.leanAngle ?? 0), 30.0, accuracy: 1.0)
+    }
+
+    func test_코너에피소드_일시정지시_진행중_에피소드_폐기() {
+        // Given: 코너 진행 중 (아직 방출 전)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        _ = sut.updateAttitude(leanMotion(degrees: 30),
+                               locationSnapshot: makeLocation(course: 0, speedKmh: 60))
+
+        // When: 일시정지 → 재보정 후 직립 주행
+        sut.handlePause()
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        let afterResume = sut.updateAttitude(leanMotion(degrees: 0),
+                                             locationSnapshot: makeLocation(course: 0))
+
+        // Then: 일시정지 전 에피소드가 재개 후로 새어 나오지 않아야 함
+        // (실주행에서는 정차 조건이 pause보다 먼저 플러시하므로 유실이 아니라 중복 방지)
+        XCTAssertNil(afterResume.event,
+                     "pause로 폐기된 에피소드가 재개 후 방출되면 안 됩니다")
     }
 }

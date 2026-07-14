@@ -227,6 +227,9 @@ public actor TourRepository: TourRepositoryInterface {
         
         let eventDTOs = record.events.map { e in
             TourEventDTO(
+                // 저장된 id를 그대로 전달 — 매 조회마다 새 UUID가 되면 SwiftUI ForEach가
+                // 같은 이벤트를 삭제/재삽입으로 처리해 identity가 깨진다
+                id: e.id,
                 type: e.type.rawValue,
                 startTime: e.startTime,
                 endTime: e.endTime,
