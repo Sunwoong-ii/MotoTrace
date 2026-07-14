@@ -17,8 +17,14 @@ public protocol TrackingAnalyzerInterface {
     /// 자세 분석 — 결과를 반환만 하고 저장은 하지 않음
     func updateAttitude(_ data: MotionSnapshot) -> LeanAnalyzerResult
     
-    func updateAcceleration(_ data: MotionSnapshot)
-    
+    /// 세션 복구 시 이전 누적 통계 시딩 — 앱 재시작으로 소실된 메모리 누적값을 DB 값으로 복원
+    func restoreStats(
+        movingTimeSeconds: TimeInterval,
+        movingDistanceKm: Double,
+        topSpeedKmh: Double,
+        topLeanAngleDegrees: Double
+    )
+
     func stats() -> TourStats
     func setThresholds(_ thresholds: TrackingThresholds)
     func calibrateLeanZero(rollDegrees: Double, pitchDegrees: Double)

@@ -161,6 +161,31 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                         "주행 속도에서 최대 린앵글이 갱신되어야 합니다")
     }
 
+    // MARK: - 2-4. 세션 복구 시딩 후 더 작은 기울기는 최대 린앵글 미갱신
+
+    func test_restoreTopLeanAngle_시딩값보다_작은_기울기는_최대_린앵글_갱신_안함() {
+        // Given: 이전 세션 최대 34.7°로 시딩 + 캘리브레이션
+        sut.restoreTopLeanAngle(34.7)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1),
+                               locationSnapshot: makeLocation(course: 0))
+
+        // When: 시딩값보다 작은 30° 기울기
+        let half = (30.0 * .pi / 180.0) / 2.0
+        let result = sut.updateAttitude(
+            makeMotion(gx: 0,
+                       gy: -sin(30.0 * .pi / 180.0),
+                       gz: -cos(30.0 * .pi / 180.0),
+                       qw: cos(half), qx: sin(half)),
+            locationSnapshot: makeLocation(course: 0)
+        )
+
+        // Then: 최대 린앵글은 시딩값 유지 (복구 직후 더 낮은 값이 DB를 덮어쓰는 버그 방지)
+        XCTAssertNil(result.maxLeanAngleUpdated,
+                     "시딩된 최대 린앵글보다 작으면 갱신되지 않아야 합니다")
+        XCTAssertEqual(sut.topLeanAngle(), 34.7, accuracy: 0.001,
+                       "최대 린앵글은 시딩값을 유지해야 합니다")
+    }
+
     // MARK: - 3. 오른쪽 30도 기울기
     // 바이크가 전진축(북=world-x)을 중심으로 30° 기울어짐 (세계좌표 x축 회전)
     // - 새 중력 device frame: (0, -sin30°, -cos30°)

@@ -194,6 +194,11 @@ final class LeanAnalyzer {
         self.thresholds = thresholds
     }
 
+    /// 세션 복구 시 이전 최대 린앵글 시딩 — 이후 더 큰 기울기만 갱신으로 처리된다
+    func restoreTopLeanAngle(_ degrees: Double) {
+        topLeanAngleDegrees = degrees
+    }
+
     func handlePause() {
         // 일시정지 시 캘리브레이션 리셋 — 재개 후 첫 데이터로 재보정
         // 정지 중 재거치 가능성이 있으므로 전진 축 캐시도 무효화
