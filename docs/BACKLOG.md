@@ -23,6 +23,9 @@
 - [ ] 커스텀 스킬 추가 확충 — mock-ride·스캐폴딩 외에 반복 워크플로 스킬화. 후보: ① 빌드+관련 모듈 테스트+시뮬레이터 확인까지 한 번에 도는 검증 스킬, ② PR 생성 스킬(브랜치 규칙·본문 템플릿·검증 결과 자동 포함), ③ MVI Store 테스트 보일러플레이트 생성 스킬
 - [ ] GitHub MCP 도입 검토 — 현행 gh CLI 방식과 비교해 장단점(토큰 관리, 컨텍스트 비용, PR 리뷰 코멘트 접근성 등) 정리 후 도입 여부 결정. 도입 시 `.mcp.json`에 등록
 - [x] 검증 분리 — ① 커밋 게이트 훅: `.claude/hooks/require-build-test.sh` + `.claude/settings.json` PreToolUse 훅으로 git commit 전 앱 빌드+변경 모듈 테스트 강제, ② 로컬 리뷰: CLAUDE.md에 "PR 생성 전 /code-review" 규칙 추가 (커스텀 리뷰 에이전트는 내장 /code-review로 충분한지 써본 뒤 판단)
+- [x] Codex 위임 워크플로 도입 — 빌드+테스트 검증과 PR 전 리뷰를 Codex(openai-codex 플러그인)로 위임해 Claude 토큰 사용량 절감. mock ride는 Codex 샌드박스의 CoreSimulatorService 차단으로 위임 불가 확인, Claude 직접 실행 유지. 커밋 게이트는 빌드 직접 실행 대신 검증 스탬프(`scripts/verify-stamp.sh`) 검사로 전환, git·PR은 Claude 유지. Codex 지침은 AGENTS.md
+- [ ] Codex mock ride 위임 재검토 — 셸 제어는 샌드박스에 막히지만 XcodeBuildMCP MCP 도구는 동작하므로, ui-automation 워크플로를 MCP에 활성화하고 mockride.sh 흐름을 MCP 도구 호출로 포팅하면 가능할 수 있음. 복잡도 대비 절감 효과(스크린샷 1~2장 수준) 작아 보류
+- [ ] Codex 자동 review gate(Stop 훅) 활성화 재검토 — 현재 토큰 절약을 위해 비활성. Codex 위임 운영 경험이 쌓이면 `/codex:setup`으로 활성화 여부 재판단
 
 ## 발견된 이슈 (조사 필요)
 

@@ -1,6 +1,8 @@
 #!/bin/bash
-# 커밋 게이트 (PreToolUse 훅) — git commit 실행 전에 빌드+변경 모듈 테스트를 강제한다.
-# 실패 시 permissionDecision=deny 로 커밋 자체를 차단한다.
+# 커밋 게이트 (PreToolUse 훅) — git commit 전에 검증 스탬프(scripts/verify-stamp.sh)가
+# 현재 작업 트리와 일치하는지 확인한다. 빌드+테스트는 Codex 위임 검증이 수행하고,
+# 성공 시 스탬프를 남긴다 — 훅은 "검증된 그대로의 트리인지"만 수 초 안에 검사한다.
+# 스탬프 없음/불일치 시 permissionDecision=deny 로 커밋을 차단한다.
 set -u
 
 INPUT=$(cat)
@@ -36,37 +38,13 @@ if ! printf '%s\n' "$CHANGED" | grep -qE '\.swift$|\.xcconfig$|^Tuist/'; then
   exit 0
 fi
 
-DEST="platform=iOS Simulator,name=${COMMIT_GATE_SIM:-iPhone 17 Pro}"
+# 스탬프 스크립트가 없으면 검증 자체가 불가능하므로 차단 (fail-closed)
+[ -x "scripts/verify-stamp.sh" ] || deny "커밋 게이트: scripts/verify-stamp.sh 가 없거나 실행 불가 — 검증 불가로 커밋을 차단합니다."
 
-# 게이트 로그는 .mcp-artifacts/commit-gate/에 실행(RUN_ID) 단위로 보존한다
-# — 성공 로그도 남겨 빌드 시간 추이 등을 추적할 수 있게 하고, 최근 20회분만 유지
-LOG_DIR=".mcp-artifacts/commit-gate"
-mkdir -p "$LOG_DIR"
-RUN_ID=$(date +%Y%m%d-%H%M%S)
-# .DS_Store 등 비패턴 파일이 섞이면 보존 회수 계산이 어긋나므로 타임스탬프 형식만 센다
-ls -1 "$LOG_DIR" | grep -E '^[0-9]{8}-[0-9]{6}_' | cut -d_ -f1 | sort -ur | sed -n '21,$p' | while read -r old; do
-  rm -f "$LOG_DIR/${old}"_*
-done
-
-# 모듈 테스트는 앱 타겟을 빌드하지 않으므로, 앱 타겟 컴파일 깨짐은 이 빌드만 잡는다 (중복 아님)
-BUILD_LOG="$LOG_DIR/${RUN_ID}_build.log"
-echo "커밋 게이트: 앱 빌드 검증 중..." >&2
-if ! xcodebuild -workspace MotoTrace.xcworkspace -scheme MotoTrace \
-     -destination "$DEST" build >"$BUILD_LOG" 2>&1; then
-  deny "커밋 게이트: 빌드 실패로 커밋을 차단했습니다. $(grep -E 'error:' "$BUILD_LOG" | head -5 | tr '\n' ' ') (전체 로그: $BUILD_LOG)"
+# 스탬프 검사 — Codex 검증(빌드+변경 모듈 테스트) 성공 시점의 트리 지문과 대조
+RESULT=$(scripts/verify-stamp.sh check 2>&1)
+if [ $? -ne 0 ]; then
+  deny "커밋 게이트: $RESULT Codex에 빌드+테스트 검증을 위임하고, 성공 후 'scripts/verify-stamp.sh write \"<검증 증거 요약>\"'으로 스탬프를 남긴 뒤 다시 커밋하세요."
 fi
-
-# 변경 파일에서 모듈명 추출 → Tests 타겟이 있는 모듈만 테스트
-SCHEMES=$(printf '%s\n' "$CHANGED" | sed -nE 's#^Modules/[^/]+/([^/]+)/.*#\1#p' | sort -u)
-for SCHEME in $SCHEMES; do
-  TESTS_DIR=$(ls -d Modules/*/"$SCHEME"/Tests 2>/dev/null | head -1)
-  [ -z "$TESTS_DIR" ] && continue
-  TEST_LOG="$LOG_DIR/${RUN_ID}_${SCHEME}-test.log"
-  echo "커밋 게이트: $SCHEME 테스트 실행 중..." >&2
-  if ! xcodebuild -workspace MotoTrace.xcworkspace -scheme "$SCHEME" \
-       -destination "$DEST" test >"$TEST_LOG" 2>&1; then
-    deny "커밋 게이트: $SCHEME 테스트 실패로 커밋을 차단했습니다. $(grep -E 'Test Case.*failed|error:' "$TEST_LOG" | head -5 | tr '\n' ' ') (전체 로그: $TEST_LOG)"
-  fi
-done
 
 exit 0

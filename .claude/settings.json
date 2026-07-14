@@ -36,8 +36,8 @@
           {
             "type": "command",
             "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/require-build-test.sh",
-            "timeout": 900,
-            "statusMessage": "커밋 게이트: 빌드+테스트 검증 중..."
+            "timeout": 60,
+            "statusMessage": "커밋 게이트: 검증 스탬프 확인 중..."
           }
         ]
       }
