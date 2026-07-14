@@ -28,8 +28,8 @@
 
 - [ ] AppDIContainer 싱글턴 resolve가 스레드 안전하지 않음 — 캐시 확인과 factory 실행 사이 락이 없어 동시 resolve 시 인스턴스가 중복 생성될 수 있음. 현재는 모든 resolve가 메인 스레드라 실해는 없지만, 백그라운드 resolve가 생기면 문제 (계측 로거 코드리뷰에서 발견)
 
-- [ ] 세션 복구 시 analyzer가 새 인스턴스라 이전 주행 거리/통계가 0부터 시작 → `updateStats()`가 저장된 값을 더 작은 값으로 덮어쓰는 문제
-- [ ] Tuist manifest에 FeatureTour → CoreDataStorageInterface 의존성 누락 (빌드 경고 발생 중)
-- [ ] `updateStats()`가 매초 repository에 쓰기 — README의 "30회 업데이트마다 저장"과 불일치 여부 확인
+- [x] 세션 복구 시 analyzer가 새 인스턴스라 이전 주행 거리/통계가 0부터 시작 → `restoreStats` 시딩 API로 해결 (#7). fetchTour id 무시 버그도 함께 수정
+- [x] Tuist manifest에 FeatureTour → CoreDataStorageInterface 의존성 누락 → implementationDependencies 선언으로 해결 (#7)
+- [x] `updateStats()`가 매초 repository에 쓰기 — 오탐 판정: 스로틀이 repository 내부에 있어 README("30회마다 저장")와 실질 일치. 진짜 문제였던 finishTour 최종 저장이 스로틀에 막히는 버그를 수정 (#7)
 - [ ] FeatureSettings 개발 — TrackingPolicy 임계값(급가속/뱅킹각/정차 기준)을 설정 화면과 연결
 - [ ] 린앵글 오일러 폴백 → 중력 투영 전환 시 값 불연속 — course 최초 확보 순간 계산 방식이 바뀌며 표시값이 점프할 수 있음(경사 보정 유무 차이). 실주행 영향은 주행 시작 직후 한 번뿐이라 낮음, 필요 시 스무딩 검토
