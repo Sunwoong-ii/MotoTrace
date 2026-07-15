@@ -64,6 +64,11 @@ final class LeanAnalyzer {
     private var topLeanAngleDegrees: Double = 0
     private var currentLeanAngleDegrees: Double = 0
 
+    // 진행 중인 코너 에피소드의 피크 스냅샷 — 임계값 진입부터 이탈(또는 정차)까지를
+    // 한 코너로 묶어 피크 1건만 이벤트로 방출한다. 업데이트마다 방출하면
+    // 코너 하나에 수십 건이 저장돼 히스토리 지도 마커가 겹쳐 쌓이기 때문
+    private var cornerPeakEvent: TrackingEvent?
+
     init(thresholds: TrackingThresholds) {
         self.thresholds = thresholds
     }
@@ -164,15 +169,24 @@ final class LeanAnalyzer {
         }
         // 이벤트는 정지 중 폰 조작(거치 해제 등)으로 인한 스팸 기록을 막기 위해
         // 주행 속도일 때만 남긴다
-        guard locationSnapshot.speedKmh >= thresholds.stopSpeedKmh else {
-            return result
-        }
-        if abs(leanDeg) >= thresholds.minLeanAngleDegrees {
-            result.event = TrackingEvent(
-                startSpeedKmh: locationSnapshot.speedKmh,
-                location: locationSnapshot.location,
-                leanAngle: leanDeg
-            )
+        let isRiding = locationSnapshot.speedKmh >= thresholds.stopSpeedKmh
+        // 이탈 판정에 히스테리시스 — 임계값 언저리(30.1°→29.9°) 노이즈로
+        // 한 코너가 여러 이벤트로 쪼개지지 않게 진입보다 낮은 각도에서만 종료로 본다
+        let exitThreshold = max(thresholds.minLeanAngleDegrees - 3.0,
+                                thresholds.minLeanAngleDegrees * 0.5)
+        if isRiding && abs(leanDeg) >= thresholds.minLeanAngleDegrees {
+            // 에피소드 진행 중 — 피크가 갱신될 때만 그 순간의 스냅샷을 보관
+            if abs(leanDeg) > abs(cornerPeakEvent?.leanAngle ?? 0) {
+                cornerPeakEvent = TrackingEvent(
+                    startSpeedKmh: locationSnapshot.speedKmh,
+                    location: locationSnapshot.location,
+                    leanAngle: leanDeg
+                )
+            }
+        } else if let peak = cornerPeakEvent, !isRiding || abs(leanDeg) < exitThreshold {
+            // 이탈 임계값 아래로 복귀(코너 종료) 또는 정차 — 이 시점에 피크 1건만 방출
+            result.event = peak
+            cornerPeakEvent = nil
         }
 
         return result
@@ -205,9 +219,13 @@ final class LeanAnalyzer {
         isCalibrated = false
         currentLeanAngleDegrees = 0
         lastForwardDevice = nil
+        // 진행 중 에피소드는 폐기 — 재개 후 재보정된 값과 섞이지 않게 한다
+        // (기울인 채 주행 중 일시정지하는 드문 경우 해당 코너 마커는 의도적으로 버린다)
+        cornerPeakEvent = nil
     }
 
     func reset() {
+        cornerPeakEvent = nil
         isCalibrated = false
         calibrationGravity = (0, 0, -1)
         calibrationRollDegrees = 0
