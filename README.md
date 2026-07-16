@@ -241,6 +241,19 @@ tuist generate
 
 ---
 
+## AI Workflow
+
+개발에 두 AI 에이전트를 역할 분담해 사용합니다.
+
+| 담당 | 역할 | 지침 문서 |
+|---|---|---|
+| Claude Code | 소스 작성, git(commit/push/PR), mock ride 검증, 작업 조율 | `CLAUDE.md` |
+| Codex | 빌드+테스트 검증, PR 전 코드 리뷰 | `AGENTS.md` |
+
+커밋 게이트: Codex 검증 성공 시 `scripts/verify-stamp.sh`가 작업 트리 지문을 기록하고, `git commit` 훅이 지문 일치를 확인해 미검증 커밋을 차단합니다.
+
+---
+
 ## Module Dependency Graph
 
 ```mermaid

@@ -1,0 +1,12 @@
+# Codex 프로젝트 설정 — trusted로 등록된 저장소에서만 로드된다
+# (워크트리별 trust 등록은 ~/.codex/config.toml의 [projects."..."] 항목)
+#
+# XcodeBuildMCP를 MCP 서버로 등록하는 이유: Codex 위임 검증은 read-only 샌드박스로
+# 실행되는데, MCP 서버 프로세스는 샌드박스 밖에서 돌아 DerivedData 쓰기·시뮬레이터
+# 제어가 가능하다. 셸에서 xcodebuild를 직접 실행하면 샌드박스에 막힌다.
+
+[mcp_servers.XcodeBuildMCP]
+command = "npx"
+args = ["-y", "xcodebuildmcp@latest", "mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 900
