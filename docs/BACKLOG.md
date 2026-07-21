@@ -14,7 +14,7 @@
 - [ ] 백그라운드에서 위치·린앵글 수집 정상 여부 검증 — 실기기 백그라운드 상태에서 location/motion 스트림이 끊기지 않고 수집되는지 확인. 상태 3종 구분 측정: 포그라운드(기준선)/홈 화면 배경/화면 잠금. 측정 항목: location 콜백 간격(~1Hz), motion 콜백 간격(0.2s), 백그라운드 진입 전후 gap, motion 콜백이 유지돼도 roll/yaw 값 정상 여부(자기 센서 열화 감지)
 - [ ] 백그라운드 메모리·배터리 사용량 측정 — 장시간 트래킹 시 Instruments(Allocations/Energy Log) 또는 MetricKit으로 프로파일링, 위치 정확도/모션 주기 튜닝 근거 마련
 - [x] 깨진 LeanAngleAnalyzer 테스트 2건 수정 — 실제 원인은 좌표계 불일치: 구현은 CMDeviceMotion xTrueNorthZVertical(NWU)인데 테스트 픽스처가 ENU 가정으로 작성됨. 픽스처를 NWU로 수정, 무의미하게 통과하던 좌우 부호 테스트도 실질 검증하도록 보강
-- [ ] TourStore 단위 테스트 작성 — pause/resume/stop/restore 상태머신 검증 (mock sensors/repository 필요)
+- [ ] TourStore 단위 테스트 작성 — pause/resume/stop/restore 상태머신 검증 + RideSessionRuntime 동기화 검증(start/pause/resume/stop/restore → 화면잠금 active `true/true/true/false/true`, willEnterForeground 재적용). mock sensors/analyzer/repository/sessionStore + 기록형 RideSessionRuntime fake 필요 (#10 리뷰 Minor에서 확장)
 
 ## AI 워크플로 고도화
 

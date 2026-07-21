@@ -19,6 +19,7 @@ final class TourStore: ObservableObject {
     private let analyzer: TrackingAnalyzerInterface
     private let repository: TourRepositoryInterface
     private let sessionStore: TrackingSessionRepositoryInterface
+    private let rideSessionRuntime: RideSessionRuntime
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
     private var statsUpdateTask: Task<Void, Never>?
@@ -32,13 +33,20 @@ final class TourStore: ObservableObject {
         analyzer: TrackingAnalyzerInterface,
         repository: TourRepositoryInterface,
         sessionStore: TrackingSessionRepositoryInterface,
+        rideSessionRuntime: RideSessionRuntime,
         initialState: TourState = TourState()
     ) {
         self.sensors = sensors
         self.analyzer = analyzer
         self.repository = repository
         self.sessionStore = sessionStore
+        self.rideSessionRuntime = rideSessionRuntime
         self.state = initialState
+    }
+
+    /// 주행 세션 활성 상태(트래킹·일시정지 동안 유지, 종료 시 해제)를 기기 런타임에 반영한다.
+    private func syncRideSessionRuntime() {
+        rideSessionRuntime.setSessionActive(state.trackingStatus != .idle)
     }
     
     func send(_ intent: TourIntent) {
@@ -59,6 +67,7 @@ final class TourStore: ObservableObject {
     private func startTracking(tourName: String) {
         guard locationTask == nil, motionTask == nil else { return }
         state.trackingStatus = .tracking
+        syncRideSessionRuntime()
         state.tourName = tourName
         
         // Create new tour
@@ -100,6 +109,8 @@ final class TourStore: ObservableObject {
     
     private func pauseTracking() {
         state.trackingStatus = .paused
+        // 일시정지 중에도 화면은 켜둔다(신호 대기 등) — active 유지
+        syncRideSessionRuntime()
         pausedAt = Date()
         sensors.stop()
         
@@ -123,7 +134,8 @@ final class TourStore: ObservableObject {
     private func resumeTracking() {
         guard let tourId = currentTourId else { return }
         state.trackingStatus = .tracking
-        
+        syncRideSessionRuntime()
+
         // pause 시간만큼 시작 시점을 밀어서 경과 시간에서 제외
         if let pauseStart = pausedAt {
             let pauseDuration = Date().timeIntervalSince(pauseStart)
@@ -153,6 +165,7 @@ final class TourStore: ObservableObject {
     
     private func stopTracking() {
         state.trackingStatus = .idle
+        syncRideSessionRuntime()
         sensors.stop()
         
         // 모든 타스크 취소
@@ -247,6 +260,8 @@ final class TourStore: ObservableObject {
             // 일시정지 상태였으면 UI만 복원, 사용자 액션 대기
             state.trackingStatus = .paused
         }
+        // 복원된 세션도 활성 상태이므로 화면 잠금을 끈다
+        syncRideSessionRuntime()
     }
     
     /// 1초 주기 통계 갱신 타이머 시작
