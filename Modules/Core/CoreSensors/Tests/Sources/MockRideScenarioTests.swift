@@ -67,7 +67,8 @@ final class MockRideScenarioTests: XCTestCase {
             // When
             let attitude = MockAttitudeFactory.attitude(
                 headingDegrees: sample.headingDegrees,
-                leanDegrees: sample.leanDegrees
+                leanDegrees: sample.leanDegrees,
+                pitchDegrees: sample.pitchDegrees
             )
 
             // Then: 둘 다 단위 크기 — CMDeviceMotion 규약과 동일
@@ -81,8 +82,8 @@ final class MockRideScenarioTests: XCTestCase {
             XCTAssertEqual(gravityNorm, 1.0, accuracy: 1e-9, "t=\(t)")
             XCTAssertEqual(quaternionNorm, 1.0, accuracy: 1e-9, "t=\(t)")
 
-            // 직립 구간에서는 gravity가 정확히 아래(0,0,-1)를 향해야 캘리브레이션이 자연스러움
-            if sample.leanDegrees == 0 {
+            // 직립·평지 구간에서는 gravity가 정확히 아래(0,0,-1)를 향해야 캘리브레이션이 자연스러움
+            if sample.leanDegrees == 0 && sample.pitchDegrees == 0 {
                 XCTAssertEqual(attitude.gravityX, 0, accuracy: 1e-9, "t=\(t)")
                 XCTAssertEqual(attitude.gravityY, 0, accuracy: 1e-9, "t=\(t)")
                 XCTAssertEqual(attitude.gravityZ, -1, accuracy: 1e-9, "t=\(t)")
@@ -107,7 +108,8 @@ final class MockRideScenarioTests: XCTestCase {
             let sample = scenario.sample(at: t)
             let attitude = MockAttitudeFactory.attitude(
                 headingDegrees: sample.headingDegrees,
-                leanDegrees: sample.leanDegrees
+                leanDegrees: sample.leanDegrees,
+                pitchDegrees: sample.pitchDegrees
             )
             let recovered = recoverLeanAngle(
                 calibrationGravity: calibrationGravity,
@@ -116,6 +118,37 @@ final class MockRideScenarioTests: XCTestCase {
             )
             XCTAssertGreaterThan(abs(sample.leanDegrees), leanAngleThreshold, "t=\(t) 정점이 임계값 미만")
             XCTAssertEqual(recovered, sample.leanDegrees, accuracy: 1.0, "t=\(t)")
+        }
+    }
+
+    // MARK: - 경사각 복원
+
+    func test_경사각_분석기_차체축_수식으로_시나리오_경사가_부호까지_복원되는지() {
+        // Given: 평지 주행 시점(t=6)의 수평 forward를 차체 축으로 캡처 —
+        // LeanAngleAnalyzer가 주행 시작 직후 평지에서 차체 축을 캡처하는 동작과 동일
+        let flat = scenario.sample(at: 6)
+        let flatAttitude = MockAttitudeFactory.attitude(
+            headingDegrees: flat.headingDegrees,
+            leanDegrees: flat.leanDegrees,
+            pitchDegrees: flat.pitchDegrees
+        )
+        let bodyForward = horizontalForwardDevice(
+            attitude: flatAttitude, courseDegrees: flat.headingDegrees
+        )
+
+        // When/Then: 오르막 정점(t=22, +8°)과 내리막 정점(t=55, -6°)에서
+        // 분석기의 -asin(dot(g, 차체축)) 수식이 시나리오 경사를 부호까지 복원해야 함
+        for t in [22.0, 55.0] {
+            let sample = scenario.sample(at: t)
+            let attitude = MockAttitudeFactory.attitude(
+                headingDegrees: sample.headingDegrees,
+                leanDegrees: sample.leanDegrees,
+                pitchDegrees: sample.pitchDegrees
+            )
+            let g: Vec = (x: attitude.gravityX, y: attitude.gravityY, z: attitude.gravityZ)
+            let recovered = -asin(max(-1.0, min(1.0, dot(g, bodyForward)))) * 180 / .pi
+            XCTAssertNotEqual(sample.pitchDegrees, 0, "t=\(t) 정점이 경사 구간이 아님")
+            XCTAssertEqual(recovered, sample.pitchDegrees, accuracy: 0.5, "t=\(t)")
         }
     }
 
@@ -134,6 +167,7 @@ final class MockRideScenarioTests: XCTestCase {
             accuracy: 1.0
         )
         XCTAssertEqual(loopStart.leanDegrees, loopEnd.leanDegrees, accuracy: 1.0)
+        XCTAssertEqual(loopStart.pitchDegrees, loopEnd.pitchDegrees, accuracy: 1.0)
     }
 
     // MARK: - Helpers
@@ -153,6 +187,21 @@ final class MockRideScenarioTests: XCTestCase {
 
     private typealias Vec = (x: Double, y: Double, z: Double)
 
+    /// LeanAngleAnalyzer의 수평 forward → device frame 변환 미러링 —
+    /// 린앵글 투영 축이자 경사각용 차체 축 캡처(평지 시점)와 동일한 계산
+    private func horizontalForwardDevice(
+        attitude: MockAttitudeFactory.Attitude,
+        courseDegrees: Double
+    ) -> Vec {
+        let hRad = courseDegrees * .pi / 180
+        let forwardWorld: Vec = (x: cos(hRad), y: -sin(hRad), z: 0)
+
+        let q = (w: attitude.quaternionW, x: attitude.quaternionX,
+                 y: attitude.quaternionY, z: attitude.quaternionZ)
+        let qInv = (w: q.w, x: -q.x, y: -q.y, z: -q.z)
+        return normalize(rotate(q: qInv, v: forwardWorld))
+    }
+
     /// LeanAngleAnalyzer.updateAttitude의 투영·atan2 수식 미러링
     /// 원본: Modules/Core/CoreTracking/Implementation/Sources/SubAnalyzer/LeanAngleAnalyzer.swift
     /// (CoreSensorsTests는 CoreTracking에 의존할 수 없어 수식을 복제해 검증)
@@ -161,13 +210,7 @@ final class MockRideScenarioTests: XCTestCase {
         attitude: MockAttitudeFactory.Attitude,
         courseDegrees: Double
     ) -> Double {
-        let hRad = courseDegrees * .pi / 180
-        let forwardWorld: Vec = (x: cos(hRad), y: -sin(hRad), z: 0)
-
-        let q = (w: attitude.quaternionW, x: attitude.quaternionX,
-                 y: attitude.quaternionY, z: attitude.quaternionZ)
-        let qInv = (w: q.w, x: -q.x, y: -q.y, z: -q.z)
-        let forwardDevice = normalize(rotate(q: qInv, v: forwardWorld))
+        let forwardDevice = horizontalForwardDevice(attitude: attitude, courseDegrees: courseDegrees)
 
         let g1: Vec = (x: attitude.gravityX, y: attitude.gravityY, z: attitude.gravityZ)
 

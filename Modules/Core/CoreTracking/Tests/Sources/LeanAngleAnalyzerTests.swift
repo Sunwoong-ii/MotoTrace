@@ -64,6 +64,15 @@ final class LeanAngleAnalyzerTests: XCTestCase {
         return makeMotion(gx: 0, gy: -sin(rad), gz: -cos(rad), qw: cos(half), qx: sin(half))
     }
 
+    /// 경사 degrees°(오르막 양수)에 해당하는 gravity+quaternion 스냅샷 (전진축=북, 직립 주행)
+    /// 오르막 θ: nose-up = 월드 y(서)축 기준 -θ 회전 → q=(cos θ/2, 0, -sin θ/2, 0),
+    /// 중력이 차체 뒤쪽으로 기울어 g=(-sinθ, 0, -cosθ)
+    private func slopeMotion(degrees: Double) -> MotionSnapshot {
+        let rad = degrees * .pi / 180.0
+        let half = rad / 2.0
+        return makeMotion(gx: -sin(rad), gy: 0, gz: -cos(rad), qw: cos(half), qy: -sin(half))
+    }
+
     // MARK: - 1. 영점 캘리브레이션
 
     func test_updateAttitude_첫데이터_영점_캘리브레이션() {
@@ -225,10 +234,10 @@ final class LeanAngleAnalyzerTests: XCTestCase {
     }
 
     // MARK: - 4. 오르막/내리막에서 린앵글 불변
-    // 바이크가 15° 오르막 → 중력이 전진 축(북=device-x) 방향으로 이동
+    // 바이크가 15° 오르막 → 중력이 전진 축(북=device-x) 반대 방향으로 이동
     // 전진 축 수직 평면 투영으로 이 성분이 제거되어 린앵글 = 0이어야 함
-    // - 새 중력: (sin15°, 0, -cos15°)
-    // - 새 attitude quaternion: 측면축(y=서) 중심 15° 회전 = (cos7.5°, 0, sin7.5°, 0)
+    // - 새 중력: (-sin15°, 0, -cos15°)
+    // - 새 attitude quaternion: 측면축(y=서) 중심 -15° 회전 = (cos7.5°, 0, -sin7.5°, 0)
 
     func test_updateAttitude_오르막_경사에서_린앵글_불변() {
         // Given: 캘리브레이션
@@ -236,19 +245,78 @@ final class LeanAngleAnalyzerTests: XCTestCase {
                                locationSnapshot: makeLocation(course: 0))
 
         // When: 15° 오르막
-        let slope = 15.0 * .pi / 180.0
-        let half = slope / 2.0
-        _ = sut.updateAttitude(
-            makeMotion(gx: sin(slope),
-                       gy: 0,
-                       gz: -cos(slope),
-                       qw: cos(half), qx: 0, qy: sin(half), qz: 0),
-            locationSnapshot: makeLocation(course: 0)
-        )
+        _ = sut.updateAttitude(slopeMotion(degrees: 15), locationSnapshot: makeLocation(course: 0))
 
         // Then: 린앵글 ≈ 0° (오르막은 측면 기울기가 아님)
         XCTAssertEqual(sut.currentLeanAngle(), 0.0, accuracy: 1.0,
                        "오르막 경사에서 린앵글이 변하지 않아야 합니다")
+    }
+
+    // MARK: - 4-1. 주행 중 경사각 (차체 축 기반)
+    // 수평 투영 forward와 중력의 내적은 구조적으로 0이라 주행 중(course 유효)
+    // 경사각이 항상 0으로 죽던 버그의 회귀 방지 — 평지에서 캡처한 차체 축 기준으로
+    // 실제 경사가 부호까지 계산되어야 한다
+
+    func test_updateAttitude_주행중_오르막에서_경사각_양수() {
+        // Given: 평지 캘리브레이션 + 평지 주행 1회로 차체 축 캡처
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+
+        // When: 10° 오르막 직진 (course 유효한 주행 상태)
+        let result = sut.updateAttitude(slopeMotion(degrees: 10),
+                                        locationSnapshot: makeLocation(course: 0))
+
+        // Then: 경사각 ≈ +10° (기존 수평 투영 방식은 0이 나와 실패하는 케이스)
+        XCTAssertEqual(result.pitchAngle, 10.0, accuracy: 0.5,
+                       "주행 중 오르막 경사각이 양수로 계산되어야 합니다")
+    }
+
+    func test_updateAttitude_주행중_내리막에서_경사각_음수() {
+        // Given: 평지 캘리브레이션 + 평지 주행 1회로 차체 축 캡처
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+
+        // When: 10° 내리막 직진
+        let result = sut.updateAttitude(slopeMotion(degrees: -10),
+                                        locationSnapshot: makeLocation(course: 0))
+
+        // Then: 경사각 ≈ -10°
+        XCTAssertEqual(result.pitchAngle, -10.0, accuracy: 0.5,
+                       "주행 중 내리막 경사각이 음수로 계산되어야 합니다")
+    }
+
+    func test_updateAttitude_차체축_캡처전에는_경사각_0() {
+        // Given: 캘리브레이션 후 정지 속도로만 course 확보 (캡처 게이트 미충족)
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1),
+                               locationSnapshot: makeLocation(course: 0, speedKmh: 0))
+
+        // When: 정지 속도에서 10° 경사 (거치 상태 폰 조작 등)
+        let result = sut.updateAttitude(slopeMotion(degrees: 10),
+                                        locationSnapshot: makeLocation(course: 0, speedKmh: 0))
+
+        // Then: 차체 축 미확정 상태에서는 경사각 0 보고 (수평 투영으로 오인 계산 금지)
+        XCTAssertEqual(result.pitchAngle, 0.0, accuracy: 0.01,
+                       "차체 축 캡처 전에는 경사각이 0으로 보고되어야 합니다")
+    }
+
+    func test_handlePause_후_차체축_재캡처_전까지_경사각_0() {
+        // Given: 차체 축 캡처 후 오르막 경사각 확인
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1), locationSnapshot: makeLocation(course: 0))
+        let uphill = sut.updateAttitude(slopeMotion(degrees: 10),
+                                        locationSnapshot: makeLocation(course: 0))
+        XCTAssertEqual(uphill.pitchAngle, 10.0, accuracy: 0.5)
+
+        // When: 일시정지(재거치 가능성) → 재보정 후 정지 상태에서 경사 입력
+        sut.handlePause()
+        _ = sut.updateAttitude(makeMotion(gx: 0, gy: 0, gz: -1),
+                               locationSnapshot: makeLocation(course: 0, speedKmh: 0))
+        let beforeRecapture = sut.updateAttitude(slopeMotion(degrees: 10),
+                                                 locationSnapshot: makeLocation(course: 0, speedKmh: 0))
+
+        // Then: pause로 차체 축이 무효화되어 재캡처 전에는 0 보고
+        XCTAssertEqual(beforeRecapture.pitchAngle, 0.0, accuracy: 0.01,
+                       "pause 후 차체 축 재캡처 전에는 경사각이 0으로 보고되어야 합니다")
     }
 
     // MARK: - 5. 일시정지 후 재보정

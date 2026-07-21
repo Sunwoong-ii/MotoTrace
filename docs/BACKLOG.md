@@ -37,3 +37,4 @@
 - [x] `updateStats()`가 매초 repository에 쓰기 — 오탐 판정: 스로틀이 repository 내부에 있어 README("30회마다 저장")와 실질 일치. 진짜 문제였던 finishTour 최종 저장이 스로틀에 막히는 버그를 수정 (#7)
 - [ ] FeatureSettings 개발 — TrackingPolicy 임계값(급가속/뱅킹각/정차 기준)을 설정 화면과 연결
 - [ ] 린앵글 오일러 폴백 → 중력 투영 전환 시 값 불연속 — course 최초 확보 순간 계산 방식이 바뀌며 표시값이 점프할 수 있음(경사 보정 유무 차이). 실주행 영향은 주행 시작 직후 한 번뿐이라 낮음, 필요 시 스무딩 검토
+- [ ] mockride.sh가 스테일 앱을 설치할 수 있음 — `run`이 `~/Library/Developer/Xcode/DerivedData`를 `find | head -1`로 잡는데 ① XcodeBuildMCP 빌드 산출물은 자체 워크스페이스 경로(`~/Library/Developer/XcodeBuildMCP/workspaces/`)에 생겨 탐색 대상 밖 ② 워크트리별 DerivedData가 여럿일 때 head -1이 mtime 무관 임의 선택. 경사각 수정 검증 중 수정 전 앱이 설치돼 검증이 무효화될 뻔함(실측). 개선안: mtime 최신 선택 + XcodeBuildMCP 경로 포함, 또는 앱 경로 인자 지원
