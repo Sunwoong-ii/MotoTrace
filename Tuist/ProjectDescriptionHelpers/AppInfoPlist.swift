@@ -19,7 +19,6 @@ public enum AppInfoPlist {
             "UIColorName": "LaunchBackgroundColor",
             "UIImageName": "LaunchLogo",
             "UIImageRespectsSafeAreaInsets": false
-        ],
-        "UILaunchStoryboardName": ""
+        ]
     ]
 }
