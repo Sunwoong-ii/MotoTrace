@@ -179,13 +179,14 @@ internal final class MockCoreSensorsService: CoreSensorsInterface {
         let sample = currentSample()
         let attitude = MockAttitudeFactory.attitude(
             headingDegrees: sample.headingDegrees,
-            leanDegrees: sample.leanDegrees
+            leanDegrees: sample.leanDegrees,
+            pitchDegrees: sample.pitchDegrees
         )
 
         // roll/pitch/yaw는 표시용 근사값 — 분석기는 gravity·quaternion만 사용
         let motion = Motion(
             rollDegrees: sample.leanDegrees,
-            pitchDegrees: 0,
+            pitchDegrees: sample.pitchDegrees,
             yawDegrees: -sample.headingDegrees,
             userAccelerationX: 0,
             userAccelerationY: 0,

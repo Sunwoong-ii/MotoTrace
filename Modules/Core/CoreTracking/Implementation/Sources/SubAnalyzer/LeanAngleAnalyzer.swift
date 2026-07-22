@@ -61,6 +61,12 @@ final class LeanAnalyzer {
     // 폰이 마운트에 고정돼 있으면 정지 등으로 course가 -1이 돼도 이 축은 유지되므로 재사용한다
     private var lastForwardDevice: (x: Double, y: Double, z: Double)?
 
+    // 경사각 계산용 차체 고정 전진 축 (device frame) — 평지 주행 시점에 1회 캡처
+    // 매 프레임 course로 만드는 forwardDevice는 정의상 수평 벡터의 회전이라
+    // 중력과의 내적이 항상 0이다 (회전은 내적을 보존: dot(g, f) = dot(g_world, 수평 forward) = 0).
+    // 차체에 고정된 축은 언덕에서 바이크와 함께 기울므로 중력 투영이 실제 경사를 반영한다
+    private var bodyForwardDevice: (x: Double, y: Double, z: Double)?
+
     private var topLeanAngleDegrees: Double = 0
     private var currentLeanAngleDegrees: Double = 0
 
@@ -113,6 +119,12 @@ final class LeanAnalyzer {
             let qInv = (w: q.w, x: -q.x, y: -q.y, z: -q.z)
             forwardDevice = normalize(rotate(q: qInv, v: forwardWorld))
             lastForwardDevice = forwardDevice
+
+            // 주행 속도에서 첫 유효 course일 때 차체 축 캡처 — 시작 지점 평지 가정
+            // (린 영점 캘리브레이션과 동일한 전제, 마운트 고정 전제는 lastForwardDevice와 동일)
+            if bodyForwardDevice == nil && locationSnapshot.speedKmh >= thresholds.stopSpeedKmh {
+                bodyForwardDevice = forwardDevice
+            }
         } else if let cached = lastForwardDevice {
             forwardDevice = cached
         } else {
@@ -148,10 +160,17 @@ final class LeanAnalyzer {
         let leanRad = atan2(sinA, cosA)
         let leanDeg = leanRad * 180.0 / .pi
 
-        // --- 경사각: 전진 방향으로의 중력 투영 → asin ---
-        // g1d = dot(g1, forwardDevice): 오르막이면 양수, 내리막이면 음수
-        // g1은 단위 벡터이므로 asin(g1d) = 경사각 (도)
-        let pitchDeg = asin(max(-1.0, min(1.0, g1d))) * 180.0 / .pi
+        // --- 경사각: 차체 고정 전진 축으로의 중력 투영 → -asin ---
+        // forwardDevice(수평 투영)를 쓰면 내적이 구조적으로 0이라 주행 중 경사가 항상 0으로 죽는다.
+        // 오르막 θ에서 중력이 차체 뒤쪽으로 기울어 dot = -sinθ → 부호 반전으로 오르막=양수.
+        // 캡처 전(주행 시작 직후)에는 경사 미확정으로 0을 보고한다
+        let pitchDeg: Double
+        if let bodyForward = bodyForwardDevice {
+            let gForward = dot(g1, bodyForward)
+            pitchDeg = -asin(max(-1.0, min(1.0, gForward))) * 180.0 / .pi
+        } else {
+            pitchDeg = 0
+        }
 
         return makeResult(leanDeg: leanDeg, pitchDeg: pitchDeg, locationSnapshot: locationSnapshot)
     }
@@ -219,6 +238,7 @@ final class LeanAnalyzer {
         isCalibrated = false
         currentLeanAngleDegrees = 0
         lastForwardDevice = nil
+        bodyForwardDevice = nil
         // 진행 중 에피소드는 폐기 — 재개 후 재보정된 값과 섞이지 않게 한다
         // (기울인 채 주행 중 일시정지하는 드문 경우 해당 코너 마커는 의도적으로 버린다)
         cornerPeakEvent = nil
@@ -231,6 +251,7 @@ final class LeanAnalyzer {
         calibrationRollDegrees = 0
         calibrationPitchDegrees = 0
         lastForwardDevice = nil
+        bodyForwardDevice = nil
         topLeanAngleDegrees = 0
         currentLeanAngleDegrees = 0
     }
