@@ -101,6 +101,9 @@ internal struct TourView: View {
             .ignoresSafeArea()
         }
         .animation(.easeInOut(duration: 0.35), value: isActive)
+        // 트래킹 세션 중(일시정지 포함)에는 하단 탭바를 숨겨 몰입형 주행 화면을 확보 —
+        // 일시정지도 세션 진행 중이라 탭바로 History 이탈이 열리지 않게 idle에서만 재등장
+        .toolbar(isActive ? .hidden : .visible, for: .tabBar)
         .onChange(of: isActive) { _, active in
             guard !active else { return }
             withAnimation(.easeInOut(duration: 0.35)) {
