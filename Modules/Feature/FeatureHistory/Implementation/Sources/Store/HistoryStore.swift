@@ -39,6 +39,8 @@ final class HistoryStore: ObservableObject {
                         id: dto.id,
                         duration: dto.duration,
                         distance: dto.distance,
+                        topSpeed: dto.topSpeed,
+                        maxLeanAngle: dto.maxLeanAngle,
                         tourName: dto.tourName,
                         createdAt: dto.createdAt
                     )
