@@ -11,19 +11,25 @@ public struct HistoryRecord {
     public let id: UUID
     public let duration: TimeInterval
     public let distance: Double
+    public let topSpeed: Double
+    public let maxLeanAngle: Double
     public let tourName: String
     public let createdAt: Date
-    
+
     public init(
         id: UUID,
         duration: TimeInterval,
         distance: Double,
+        topSpeed: Double,
+        maxLeanAngle: Double,
         tourName: String,
         createdAt: Date
     ) {
         self.id = id
         self.duration = duration
         self.distance = distance
+        self.topSpeed = topSpeed
+        self.maxLeanAngle = maxLeanAngle
         self.tourName = tourName
         self.createdAt = createdAt
     }

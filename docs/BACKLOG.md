@@ -31,6 +31,7 @@
 ## 발견된 이슈 (조사 필요)
 
 - [ ] AppDIContainer 싱글턴 resolve가 스레드 안전하지 않음 — 캐시 확인과 factory 실행 사이 락이 없어 동시 resolve 시 인스턴스가 중복 생성될 수 있음. 현재는 모든 resolve가 메인 스레드라 실해는 없지만, 백그라운드 resolve가 생기면 문제 (계측 로거 코드리뷰에서 발견)
+- [ ] FeatureHistory Demo 타겟 빌드 깨짐 — `FeatureHistoryDemoView.swift`가 존재하지 않는 `HistoryFeatureBuilder.build()`를 참조(실제 어셈블러는 `HistoryAssembler`). FeatureHistory 스킴 테스트 실행이 막힌다(단 실제 테스트 함수는 0개, 앱 빌드로 Impl 컴파일은 검증됨). Demo를 `HistoryAssembler` 기반으로 수정 필요 (History 셀 재구성 작업 중 발견)
 
 - [x] 세션 복구 시 analyzer가 새 인스턴스라 이전 주행 거리/통계가 0부터 시작 → `restoreStats` 시딩 API로 해결 (#7). fetchTour id 무시 버그도 함께 수정
 - [x] Tuist manifest에 FeatureTour → CoreDataStorageInterface 의존성 누락 → implementationDependencies 선언으로 해결 (#7)

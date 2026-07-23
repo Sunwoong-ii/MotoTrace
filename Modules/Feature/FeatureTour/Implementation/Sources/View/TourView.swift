@@ -132,9 +132,7 @@ internal struct TourView: View {
             TextField("예: 북한산 라이딩", text: $tourNameInput)
             Button("시작") {
                 let name = tourNameInput.trimmingCharacters(in: .whitespaces)
-                let finalName = name.isEmpty
-                    ? "투어 \(Date().formatted(date: .abbreviated, time: .shortened))"
-                    : name
+                let finalName = name.isEmpty ? "라이딩" : name
                 store.send(.startTracking(tourName: finalName))
                 tourNameInput = ""
             }
