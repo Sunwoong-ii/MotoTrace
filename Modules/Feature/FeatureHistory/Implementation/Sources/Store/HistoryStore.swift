@@ -27,6 +27,8 @@ final class HistoryStore: ObservableObject {
         switch intent {
         case .fetchTours:
             fetchTours()
+        case .deleteTour(let id):
+            deleteTour(id: id)
         }
     }
     
@@ -47,6 +49,18 @@ final class HistoryStore: ObservableObject {
                 }
             } catch {
                 print("Failed to fetch tours: \(error)")
+            }
+        }
+    }
+
+    private func deleteTour(id: UUID) {
+        Task {
+            do {
+                // 저장소 삭제가 성공한 뒤에만 목록에서 제거 — 실패했는데 화면에서만 사라지는 것을 막는다
+                try await repository.deleteTour(id: id)
+                state.tours.removeAll { $0.id == id }
+            } catch {
+                print("Failed to delete tour: \(error)")
             }
         }
     }

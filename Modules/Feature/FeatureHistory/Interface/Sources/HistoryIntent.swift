@@ -9,4 +9,5 @@ import Foundation
 
 public enum HistoryIntent {
     case fetchTours
+    case deleteTour(id: UUID)
 }

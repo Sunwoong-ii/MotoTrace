@@ -8,6 +8,9 @@ struct HistoryView: View {
     @StateObject private var store: HistoryStore
     let container: AppDIContainer
 
+    /// 삭제 확인을 기다리는 대상 — 확인 alert에 투어명을 보여주기 위해 레코드째 보관한다
+    @State private var pendingDeletion: HistoryRecord?
+
     init(store: HistoryStore, container: AppDIContainer) {
         self._store = StateObject(wrappedValue: store)
         self.container = container
@@ -32,6 +35,24 @@ struct HistoryView: View {
         .onAppear {
             store.send(.fetchTours)
         }
+        .alert(
+            "기록을 삭제할까요?",
+            isPresented: Binding(
+                get: { pendingDeletion != nil },
+                set: { if !$0 { pendingDeletion = nil } }
+            ),
+            presenting: pendingDeletion
+        ) { tour in
+            Button("삭제", role: .destructive) {
+                store.send(.deleteTour(id: tour.id))
+                pendingDeletion = nil
+            }
+            Button("취소", role: .cancel) {
+                pendingDeletion = nil
+            }
+        } message: { tour in
+            Text("'\(tour.tourName)'의 주행 경로와 기록이 모두 삭제되며 되돌릴 수 없습니다.")
+        }
     }
 
     // MARK: - Header
@@ -53,31 +74,59 @@ struct HistoryView: View {
     // MARK: - Tour List
 
     private var tourList: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                ForEach(groupedTours, id: \.day) { group in
+        // 스와이프 삭제(.swipeActions)가 List 전용이라 List를 쓰고, 기본 크롬은 걷어내 카드 디자인을 유지한다
+        List {
+            ForEach(groupedTours, id: \.day) { group in
+                Section {
+                    ForEach(group.tours, id: \.id) { tour in
+                        // 링크를 셀 뒤에 겹쳐 깐다 — NavigationLink의 label로 감싸면 List가 기본
+                        // disclosure chevron을 붙여 셀의 커스텀 chevron과 겹치고 카드 폭도 줄어든다.
+                        // 링크가 셀 크기로 늘어나 카드 전체가 탭 영역이 된다.
+                        ZStack {
+                            NavigationLink {
+                                HistoryDetailFeatureBuilder.assemble(
+                                    container: container,
+                                    tourId: tour.id
+                                )
+                            } label: {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                            }
+                            .opacity(0)
+                            // 링크 라벨이 투명 Color라 VoiceOver가 읽을 내용이 없다 —
+                            // 활성화 대상인 링크 자체에 카드 정보를 라벨로 준다
+                            .accessibilityLabel(accessibilityLabel(for: tour))
+
+                            // 카드는 표시 전용 — 탭은 뒤의 링크가, 낭독은 링크 라벨이 담당
+                            tourCell(tour)
+                                .allowsHitTesting(false)
+                                .accessibilityHidden(true)
+                        }
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        // 그림자(radius 8, y 2)가 행 경계에서 잘리지 않도록 여유를 둔다
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            // 주행 기록은 복구할 수 없어 풀 스와이프 즉시 삭제는 막고 확인을 받는다
+                            Button(role: .destructive) {
+                                pendingDeletion = tour
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        }
+                    }
+                } header: {
                     Text(sectionTitle(group.day))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .padding(.top, 8)
-
-                    ForEach(group.tours, id: \.id) { tour in
-                        NavigationLink {
-                            HistoryDetailFeatureBuilder.assemble(
-                                container: container,
-                                tourId: tour.id
-                            )
-                        } label: {
-                            tourCell(tour)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                        .textCase(nil)
                 }
+                .listRowSeparator(.hidden)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 0)
     }
 
     // MARK: - Tour Cell
@@ -112,6 +161,21 @@ struct HistoryView: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+    }
+
+    /// 카드가 시각적으로 보여주는 정보를 한 문장으로 읽어준다 (배지는 축약 표기라 단위를 풀어 씀)
+    private func accessibilityLabel(for tour: HistoryRecord) -> String {
+        let distance = String(format: "%.1f킬로미터", tour.distance)
+        let topSpeed = String(format: "최고 속도 시속 %.0f킬로미터", tour.topSpeed)
+        let maxLean = String(format: "최대 뱅킹각 %.0f도", tour.maxLeanAngle)
+        return [
+            tour.tourName,
+            formatDate(tour.createdAt),
+            distance,
+            formatDuration(tour.duration),
+            topSpeed,
+            maxLean
+        ].joined(separator: ", ")
     }
 
     // MARK: - Stat Badges
