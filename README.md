@@ -10,9 +10,11 @@ MotoTrace는 라이딩 중 속도, 뱅킹각(린앵글), 도로 경사각, 급�
 
 ## Preview
 
-| 트래킹 중 | 라이딩 히스토리 |
-|:---:|:---:|
-| <img src="docs/tracking-active.png" width="300" alt="트래킹 중 화면 — 속도·린앵글·경사각 게이지와 실시간 경로"> | <img src="docs/history-list.png" width="300" alt="히스토리 목록 — 날짜별 그룹핑과 주행 통계 배지"> |
+| 트래킹 중 | 투어 상세 | 라이딩 히스토리 |
+|:---:|:---:|:---:|
+| <img src="docs/tracking-active.png" width="250" alt="트래킹 중 화면 — 속도·린앵글·경사각 게이지와 실시간 경로"> | <img src="docs/ride-detail.png" width="250" alt="투어 상세 화면 — 주행 경로와 코너별 뱅킹각·속도 마커"> | <img src="docs/history-list.png" width="250" alt="히스토리 목록 — 날짜별 그룹핑과 주행 통계 배지"> |
+
+> 실제 주행 기록입니다 (대관령, 13.5km).
 
 ---
 
