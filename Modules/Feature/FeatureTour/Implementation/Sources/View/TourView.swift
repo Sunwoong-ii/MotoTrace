@@ -6,15 +6,18 @@
 //
 
 import SwiftUI
+import UIKit
 import MapKit
 import FeatureTourInterface
 import CoreLocation
 import CoreTrackingInterface
+import CoreSensorsInterface
 import Shared
 
 /// 라이딩 트래킹 화면
 internal struct TourView: View {
     @StateObject private var store: TourStore
+    @Environment(\.openURL) private var openURL
     @State private var cameraPosition: MapCameraPosition
     @State private var showNameInput = false
     @State private var tourNameInput = ""
@@ -44,6 +47,12 @@ internal struct TourView: View {
     
     internal var body: some View {
         VStack(spacing: 0) {
+            if let notice = permissionNotice {
+                permissionBanner(notice)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
+
             if isActive {
                 topBar
                     .padding(.horizontal, 16)
@@ -123,6 +132,7 @@ internal struct TourView: View {
             }
         }
         .task {
+            store.send(.observeAuthorization)
             // idle 상태일 때만 시도 — 앱이 정상 실행된 경우엔 sessionStore.load()가 nil을 반환해 무시됨
             if store.state.trackingStatus == .idle {
                 store.send(.restoreTracking)
@@ -143,6 +153,68 @@ internal struct TourView: View {
             Text("기록할 투어의 이름을 입력하세요")
         }
     }
+}
+
+// MARK: - Permission Banner
+
+private extension TourView {
+    /// 배너는 기록이 불가능한 거부 상태에서만 띄운다.
+    /// - whenInUse: 이 앱은 UIBackgroundModes(location) + allowsBackgroundLocationUpdates를 쓰므로
+    ///   앱 사용 중 시작한 주행은 백그라운드에서도 이어진다 — 경고할 이유가 없다
+    /// - notDetermined: 시스템 권한 다이얼로그가 떠 있어 배너가 겹치면 혼란스럽다
+    var permissionNotice: PermissionNotice? {
+        switch store.state.locationAuthorization {
+        case .denied:
+            PermissionNotice(
+                icon: "location.slash.fill",
+                message: "위치 권한이 꺼져 있어 기록할 수 없어요",
+                tint: .red
+            )
+        case .whenInUse, .always, .notDetermined:
+            nil
+        }
+    }
+
+    func permissionBanner(_ notice: PermissionNotice) -> some View {
+        Button {
+            openSettings()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: notice.icon)
+                    .font(.system(size: 13, weight: .semibold))
+
+                Text(notice.message)
+                    .font(.system(size: 13, weight: .medium))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 4)
+
+                Text("설정")
+                    .font(.system(size: 13, weight: .bold))
+            }
+            .foregroundStyle(notice.tint)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            // 지도가 배경이라 반투명 틴트로는 글씨가 묻힌다 — 하단 통계 패널과 같은 불투명 카드 처리
+            .background(TourDesign.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("설정 앱의 위치 권한 화면을 엽니다")
+    }
+
+    func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        openURL(url)
+    }
+}
+
+/// 권한 안내 배너의 표시 내용
+private struct PermissionNotice {
+    let icon: String
+    let message: String
+    let tint: Color
 }
 
 // MARK: - Top Bar
@@ -264,7 +336,10 @@ private extension TourView {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 16)
             } else {
-                TrackingButton(status: .idle) {
+                TrackingButton(
+                    status: .idle,
+                    isEnabled: store.state.locationAuthorization != .denied
+                ) {
                     showNameInput = true
                 }
                 .accessibilityIdentifier("startRecordingButton")

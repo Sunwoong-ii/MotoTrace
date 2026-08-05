@@ -5,7 +5,7 @@
 
 ## 우선순위 높음
 
-- [ ] 위치 권한 거부 상태 처리 — `CoreSensorsInterface`에 권한 상태 조회(authorizationStatus) 추가하고, 거부/제한 시 설정 앱 유도 UI 표시
+- [x] 위치 권한 거부 상태 처리 — `CoreSensorsInterface`에 `authorizationStatus()`/`authorizationStream()` 추가, `locationManagerDidChangeAuthorization` 델리게이트로 실시간 반영. 거부 시 Tour 화면 배너 + START 버튼 비활성 + 설정 유도, 주행 중 회수 시 자동 종료, 일시정지·복구 세션은 보존. When-In-Use는 배너 없음 — `UIBackgroundModes(location)` + `allowsBackgroundLocationUpdates` 조합이라 백그라운드 기록이 정상 동작함을 확인
 - [x] 백그라운드 센서 계측 로거 추가 — location/motion 콜백에 OSLog 타임스탬프 기록 + 1초 이상 수신 gap 감지 로그. 실기기 백그라운드 검증(아래 항목)의 선행 작업. 조사 결과: CLLocationManager는 현 설정(UIBackgroundModes location + allowsBackgroundLocationUpdates + pausesLocationUpdatesAutomatically=false)으로 백그라운드 동작 확실. 리스크는 CMMotionManager — ① iOS 11+ 일부 기기에서 백그라운드 진입 시 deviceMotion 중단 이력(워크어라운드: 백그라운드 진입 시 stop→restart), ② `.xTrueNorthZVertical` 프레임이 자기 센서+위치를 요구해 화면 잠금 시 yaw 드리프트/값 튐 가능성(문제 시 `.xArbitraryZVertical` 다운그레이드 검토)
 - [ ] 백그라운드에서 위치·린앵글 수집 정상 여부 검증 — 실기기 백그라운드 상태에서 location/motion 스트림이 끊기지 않고 수집되는지 확인. 상태 3종 구분 측정: 포그라운드(기준선)/홈 화면 배경/화면 잠금. 측정 항목: location 콜백 간격(~1Hz), motion 콜백 간격(0.2s), 백그라운드 진입 전후 gap, motion 콜백이 유지돼도 roll/yaw 값 정상 여부(자기 센서 열화 감지)
 - [ ] 백그라운드 메모리·배터리 사용량 측정 — 장시간 트래킹 시 Instruments(Allocations/Energy Log) 또는 MetricKit으로 프로파일링, 위치 정확도/모션 주기 튜닝 근거 마련

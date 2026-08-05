@@ -3,6 +3,7 @@ import MapKit
 import SwiftUI
 import CoreLocation
 import CoreTrackingInterface
+import CoreSensorsInterface
 
 public enum TrackingStatus {
     case idle      // 대기 중 (아직 시작 안 함)
@@ -26,7 +27,10 @@ public struct TourState {
     
     /// 새 트래킹 세션 시작마다 갱신 — MapPolyline 캐시 강제 초기화용
     public var mapSessionId: UUID
-    
+
+    /// 위치 권한 상태 — 안내 배너 표시와 시작 버튼 활성 여부를 결정한다
+    public var locationAuthorization: LocationAuthorizationStatus
+
     public init(
         tourName: String = "",
         trackingStatus: TrackingStatus = .idle,
@@ -36,7 +40,8 @@ public struct TourState {
         cameraPosition: MapCameraPosition = .automatic,
         liveStats: LiveStats = LiveStats(),
         routeCoordinates: [CLLocationCoordinate2D] = [],
-        mapSessionId: UUID = UUID()
+        mapSessionId: UUID = UUID(),
+        locationAuthorization: LocationAuthorizationStatus = .notDetermined
     ) {
         self.tourName = tourName
         self.trackingStatus = trackingStatus
@@ -47,5 +52,6 @@ public struct TourState {
         self.liveStats = liveStats
         self.routeCoordinates = routeCoordinates
         self.mapSessionId = mapSessionId
+        self.locationAuthorization = locationAuthorization
     }
 }

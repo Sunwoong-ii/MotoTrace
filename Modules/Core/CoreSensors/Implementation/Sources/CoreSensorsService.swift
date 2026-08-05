@@ -21,6 +21,11 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     private var motionContinuation: AsyncStream<Motion>.Continuation?
     private var locationStreamValue: AsyncStream<Location>
     private var motionStreamValue: AsyncStream<Motion>
+
+    // 권한 스트림은 start()/stop()과 무관하게 유지된다 (센서 스트림과 달리 세션이 아니라 앱 단위 관심사).
+    // 다만 구독 시마다 새로 발급한다 — AsyncStream은 소비자가 하나뿐이라, 이전 구독이 끝난 뒤
+    // 같은 스트림을 넘기면 새 구독자가 즉시 종료된 스트림을 받아 권한 변화를 놓친다
+    private var authorizationContinuation: AsyncStream<LocationAuthorizationStatus>.Continuation?
     
     override init() {
         // 초기 스트림 생성
@@ -31,7 +36,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         let (motStream, motCont) = AsyncStream.makeStream(of: Motion.self)
         motionStreamValue = motStream
         motionContinuation = motCont
-        
+
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
@@ -53,6 +58,31 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     
     func requestAlwaysAuthorization() {
         locationManager.requestAlwaysAuthorization()
+    }
+
+    func authorizationStatus() -> LocationAuthorizationStatus {
+        Self.map(locationManager.authorizationStatus)
+    }
+
+    func authorizationStream() -> AsyncStream<LocationAuthorizationStatus> {
+        // 이전 구독은 정리하고 새로 발급 — 센서 스트림의 start()와 같은 방식
+        let (stream, continuation) = AsyncStream.makeStream(of: LocationAuthorizationStatus.self)
+        authorizationContinuation?.finish()
+        authorizationContinuation = continuation
+        // 구독 시점에 현재 값을 흘려 UI가 첫 프레임부터 올바른 상태를 갖게 한다
+        continuation.yield(authorizationStatus())
+        return stream
+    }
+
+    /// restricted는 사용자가 스스로 풀 수 없는 경우도 있지만, 안내·차단 처리는 denied와 같으므로 통합한다
+    private static func map(_ status: CLAuthorizationStatus) -> LocationAuthorizationStatus {
+        switch status {
+        case .notDetermined: .notDetermined
+        case .denied, .restricted: .denied
+        case .authorizedWhenInUse: .whenInUse
+        case .authorizedAlways: .always
+        @unknown default: .denied
+        }
     }
     
     func start() {
@@ -144,6 +174,11 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         }
     }
     
+    /// 설정 앱에서 권한을 바꾸고 돌아왔을 때도 발화한다 — 화면 안내를 실시간으로 갱신하는 경로
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authorizationContinuation?.yield(Self.map(manager.authorizationStatus))
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         let speedMetersPerSecond = max(location.speed, 0)
