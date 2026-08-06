@@ -13,7 +13,6 @@ struct TrackingButton: View {
     var isEnabled: Bool = true
     var action: () -> Void = {}
 
-    /// 비활성 상태에서는 색과 그림자를 죽여 누를 수 없다는 것을 시각적으로 알린다
     private var disabledGradient: LinearGradient {
         LinearGradient(
             colors: [TourDesign.gaugeTrack, TourDesign.gaugeTrack.opacity(0.85)],

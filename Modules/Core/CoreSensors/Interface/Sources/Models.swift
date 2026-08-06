@@ -84,12 +84,10 @@ public struct Motion: Codable {
     }
 }
 
-/// 위치 권한 상태 — 화면에서 안내·차단을 결정하는 데 쓴다
 public enum LocationAuthorizationStatus: Sendable, Equatable {
     case notDetermined
-    /// CLAuthorizationStatus의 denied/restricted 통합 — 사용자에게 보여줄 처리가 동일하다
+    /// CLAuthorizationStatus의 denied/restricted 통합 — 안내·차단 처리가 동일하다
     case denied
-    /// 앱 사용 중에만 허용 — 트래킹은 되지만 백그라운드 수집이 끊긴다
     case whenInUse
     case always
 }

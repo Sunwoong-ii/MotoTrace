@@ -28,7 +28,6 @@ public struct TourState {
     /// 새 트래킹 세션 시작마다 갱신 — MapPolyline 캐시 강제 초기화용
     public var mapSessionId: UUID
 
-    /// 위치 권한 상태 — 안내 배너 표시와 시작 버튼 활성 여부를 결정한다
     public var locationAuthorization: LocationAuthorizationStatus
 
     public init(

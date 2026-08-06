@@ -158,10 +158,9 @@ internal struct TourView: View {
 // MARK: - Permission Banner
 
 private extension TourView {
-    /// 배너는 기록이 불가능한 거부 상태에서만 띄운다.
-    /// - whenInUse: 이 앱은 UIBackgroundModes(location) + allowsBackgroundLocationUpdates를 쓰므로
-    ///   앱 사용 중 시작한 주행은 백그라운드에서도 이어진다 — 경고할 이유가 없다
-    /// - notDetermined: 시스템 권한 다이얼로그가 떠 있어 배너가 겹치면 혼란스럽다
+    /// 기록이 불가능한 거부 상태에서만 띄운다.
+    /// whenInUse는 UIBackgroundModes(location)로 백그라운드 기록이 되므로 경고할 이유가 없고,
+    /// notDetermined는 시스템 다이얼로그가 떠 있어 배너가 겹친다
     var permissionNotice: PermissionNotice? {
         switch store.state.locationAuthorization {
         case .denied:
@@ -196,7 +195,7 @@ private extension TourView {
             .foregroundStyle(notice.tint)
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            // 지도가 배경이라 반투명 틴트로는 글씨가 묻힌다 — 하단 통계 패널과 같은 불투명 카드 처리
+            // 지도가 배경이라 반투명 틴트로는 글씨가 묻힌다
             .background(TourDesign.cardBackground, in: RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
         }
@@ -210,7 +209,6 @@ private extension TourView {
     }
 }
 
-/// 권한 안내 배너의 표시 내용
 private struct PermissionNotice {
     let icon: String
     let message: String

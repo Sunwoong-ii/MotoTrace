@@ -61,7 +61,7 @@ internal final class MockCoreSensorsService: CoreSensorsInterface {
     func requestWhenInUseAuthorization() {}
     func requestAlwaysAuthorization() {}
 
-    // 가상 주행은 실제 위치 권한과 무관하므로 항상 허용으로 보고한다 (권한 안내 UI가 끼어들지 않게)
+    // 가상 주행은 실제 권한과 무관하므로 항상 허용으로 보고한다
     func authorizationStatus() -> LocationAuthorizationStatus { .always }
 
     func authorizationStream() -> AsyncStream<LocationAuthorizationStatus> {

@@ -46,7 +46,6 @@ final class TourStore: ObservableObject {
     }
 
     deinit {
-        // 권한 스트림은 자체 종료되지 않으므로 store 해제 시 구독을 정리한다
         authorizationTask?.cancel()
     }
 
@@ -74,8 +73,7 @@ final class TourStore: ObservableObject {
 
     private func observeAuthorization() {
         guard authorizationTask == nil else { return }
-        // 권한 스트림은 끝나지 않으므로 루프 밖에서 self를 잡으면 store가 영영 해제되지 않는다 —
-        // 매 반복마다 약한 참조로 되살려 순환을 끊는다
+        // 스트림이 끝나지 않으므로 루프 밖에서 self를 잡으면 store가 영영 해제되지 않는다
         let stream = sensors.authorizationStream()
         authorizationTask = Task { [weak self] in
             for await status in stream {
@@ -86,8 +84,7 @@ final class TourStore: ObservableObject {
         }
     }
 
-    /// 주행 중 권한이 회수되면 위치가 끊긴 채 세션만 굴러가므로 즉시 종료한다.
-    /// 이미 일시정지 상태면 건드리지 않는다 — 재개 가드·복구 경로가 권한 회복까지 세션을 지키도록 설계돼 있다
+    /// 주행 중 권한이 회수되면 위치가 끊긴 채 세션만 굴러가므로 종료한다 (일시정지 상태는 건드리지 않는다)
     private func handleAuthorizationChange(_ status: LocationAuthorizationStatus) {
         guard status == .denied, state.trackingStatus == .tracking else { return }
         stopTracking()
@@ -95,8 +92,7 @@ final class TourStore: ObservableObject {
 
     private func startTracking(tourName: String) {
         guard locationTask == nil, motionTask == nil else { return }
-        // 권한이 없으면 위치가 한 건도 안 들어와 빈 기록만 남는다 — 버튼이 비활성이어도 방어.
-        // State가 아니라 센서에 직접 묻는다 — 스트림 반영 전에 호출될 수 있어 State는 뒤처질 수 있다
+        // State는 스트림 반영 전이라 뒤처질 수 있어 센서에 직접 묻는다
         guard sensors.authorizationStatus() != .denied else { return }
         state.trackingStatus = .tracking
         syncRideSessionRuntime()
@@ -165,7 +161,6 @@ final class TourStore: ObservableObject {
     
     private func resumeTracking() {
         guard let tourId = currentTourId else { return }
-        // 일시정지 중 권한이 회수됐을 수 있다 — 재개해도 위치가 안 들어오므로 막는다
         guard sensors.authorizationStatus() != .denied else { return }
         state.trackingStatus = .tracking
         syncRideSessionRuntime()
@@ -243,8 +238,7 @@ final class TourStore: ObservableObject {
             try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
             try? await repository.finishTour(id: tourId)
 
-            // 세션 마커는 최종 저장이 끝난 뒤에 지운다 — 먼저 지우면 중간에 앱이 죽었을 때
-            // 버퍼에 남은 위치와 최종 통계를 마무리할 복구 경로가 사라진다
+            // 세션 삭제 — 정상 종료이므로 복구 불필요
             sessionStore.clear()
         }
     }
@@ -284,8 +278,8 @@ final class TourStore: ObservableObject {
             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
         }
         
-        // 권한이 없으면 센서를 켜봐야 위치가 안 들어오므로 일시정지로 복원한다
-        // (옵저버는 이미 .denied를 흘린 뒤라 여기서 켜면 아무도 멈추지 않는 세션이 남는다)
+        // 권한이 없으면 센서를 켜도 위치가 안 들어온다 — 옵저버도 이미 .denied를 흘린 뒤라
+        // 여기서 트래킹으로 복구하면 아무도 멈추지 않는 세션이 남는다
         if session.statusRaw == "tracking", sensors.authorizationStatus() != .denied {
             // 트래킹 중이었으면 센서 재개
             state.trackingStatus = .tracking
