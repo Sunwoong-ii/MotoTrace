@@ -284,28 +284,9 @@ final class TourStore: ObservableObject {
             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
         }
         
-        // 권한이 확정되지 않았거나 회수된 상태로 복구하면 위치 없이 세션만 굴러간다 —
-        // 일시정지로 되살려 기록은 지키고, 사용자가 권한을 허용한 뒤 재개하도록 한다.
-        // notDetermined도 포함하는 이유: 프롬프트가 떠 있는 채로 트래킹을 재시작하면
-        // 사용자가 거부를 누르는 순간 "주행 중 회수"로 간주돼 복구된 주행이 종료돼 버린다
-        let authorization = sensors.authorizationStatus()
-        if authorization != .always && authorization != .whenInUse {
-            state.trackingStatus = .paused
-            let pauseStart = pausedAt ?? Date()
-            pausedAt = pauseStart
-            // 저장소에도 일시정지로 확정한다 — 안 하면 다음 복구 때 "tracking"으로 읽혀
-            // pausedAt이 새로 잡히고, 권한이 막혀 있던 시간이 주행 시간에 섞인다
-            sessionStore.save(ActiveTrackingSession(
-                tourId: session.tourId,
-                startDate: session.startDate,
-                pausedAt: pauseStart,
-                statusRaw: "paused"
-            ))
-            syncRideSessionRuntime()
-            return
-        }
-
-        if session.statusRaw == "tracking" {
+        // 권한이 없으면 센서를 켜봐야 위치가 안 들어오므로 일시정지로 복원한다
+        // (옵저버는 이미 .denied를 흘린 뒤라 여기서 켜면 아무도 멈추지 않는 세션이 남는다)
+        if session.statusRaw == "tracking", sensors.authorizationStatus() != .denied {
             // 트래킹 중이었으면 센서 재개
             state.trackingStatus = .tracking
             sensors.requestAlwaysAuthorization()
@@ -313,7 +294,7 @@ final class TourStore: ObservableObject {
             startStatsTimer()
             startSensorTasks(tourId: session.tourId)
         } else {
-            // 일시정지 상태였으면 UI만 복원, 사용자 액션 대기
+            // 일시정지 상태였거나 권한이 없으면 UI만 복원, 사용자 액션 대기
             state.trackingStatus = .paused
         }
         // 복원된 세션도 활성 상태이므로 화면 잠금을 끈다
