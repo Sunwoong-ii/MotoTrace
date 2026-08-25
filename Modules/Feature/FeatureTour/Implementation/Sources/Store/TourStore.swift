@@ -23,6 +23,7 @@ final class TourStore: ObservableObject {
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
     private var statsUpdateTask: Task<Void, Never>?
+    private var authorizationTask: Task<Void, Never>?
     
     private var currentTourId: UUID?
     private var tourStartDate: Date?
@@ -44,6 +45,10 @@ final class TourStore: ObservableObject {
         self.state = initialState
     }
 
+    deinit {
+        authorizationTask?.cancel()
+    }
+
     /// 주행 세션 활성 상태(트래킹·일시정지 동안 유지, 종료 시 해제)를 기기 런타임에 반영한다.
     private func syncRideSessionRuntime() {
         rideSessionRuntime.setSessionActive(state.trackingStatus != .idle)
@@ -61,11 +66,34 @@ final class TourStore: ObservableObject {
             stopTracking()
         case .restoreTracking:
             Task { await restoreTracking() }
+        case .observeAuthorization:
+            observeAuthorization()
         }
+    }
+
+    private func observeAuthorization() {
+        guard authorizationTask == nil else { return }
+        // 스트림이 끝나지 않으므로 루프 밖에서 self를 잡으면 store가 영영 해제되지 않는다
+        let stream = sensors.authorizationStream()
+        authorizationTask = Task { [weak self] in
+            for await status in stream {
+                guard let self else { return }
+                self.state.locationAuthorization = status
+                self.handleAuthorizationChange(status)
+            }
+        }
+    }
+
+    /// 주행 중 권한이 회수되면 위치가 끊긴 채 세션만 굴러가므로 종료한다 (일시정지 상태는 건드리지 않는다)
+    private func handleAuthorizationChange(_ status: LocationAuthorizationStatus) {
+        guard status == .denied, state.trackingStatus == .tracking else { return }
+        stopTracking()
     }
 
     private func startTracking(tourName: String) {
         guard locationTask == nil, motionTask == nil else { return }
+        // State는 스트림 반영 전이라 뒤처질 수 있어 센서에 직접 묻는다
+        guard sensors.authorizationStatus() != .denied else { return }
         state.trackingStatus = .tracking
         syncRideSessionRuntime()
         state.tourName = tourName
@@ -133,6 +161,7 @@ final class TourStore: ObservableObject {
     
     private func resumeTracking() {
         guard let tourId = currentTourId else { return }
+        guard sensors.authorizationStatus() != .denied else { return }
         state.trackingStatus = .tracking
         syncRideSessionRuntime()
 
@@ -185,7 +214,7 @@ final class TourStore: ObservableObject {
         currentTourId = nil
         tourStartDate = nil
         pausedAt = nil
-        
+
         // Finish tour — 최종 통계 저장
         Task {
             // 일시정지 중 종료 시: 일시정지 시점까지만 계산
@@ -208,7 +237,7 @@ final class TourStore: ObservableObject {
             try? await repository.updateTopSpeed(id: tourId, speed: analyzer.topSpeed())
             try? await repository.updateTopLeanAngle(id: tourId, leanAngle: abs(analyzer.topLeanAngle()))
             try? await repository.finishTour(id: tourId)
-            
+
             // 세션 삭제 — 정상 종료이므로 복구 불필요
             sessionStore.clear()
         }
@@ -249,7 +278,9 @@ final class TourStore: ObservableObject {
             CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
         }
         
-        if session.statusRaw == "tracking" {
+        // 권한이 없으면 센서를 켜도 위치가 안 들어온다 — 옵저버도 이미 .denied를 흘린 뒤라
+        // 여기서 트래킹으로 복구하면 아무도 멈추지 않는 세션이 남는다
+        if session.statusRaw == "tracking", sensors.authorizationStatus() != .denied {
             // 트래킹 중이었으면 센서 재개
             state.trackingStatus = .tracking
             sensors.requestAlwaysAuthorization()
@@ -257,7 +288,7 @@ final class TourStore: ObservableObject {
             startStatsTimer()
             startSensorTasks(tourId: session.tourId)
         } else {
-            // 일시정지 상태였으면 UI만 복원, 사용자 액션 대기
+            // 일시정지 상태였거나 권한이 없으면 UI만 복원, 사용자 액션 대기
             state.trackingStatus = .paused
         }
         // 복원된 세션도 활성 상태이므로 화면 잠금을 끈다

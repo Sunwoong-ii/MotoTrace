@@ -61,6 +61,15 @@ internal final class MockCoreSensorsService: CoreSensorsInterface {
     func requestWhenInUseAuthorization() {}
     func requestAlwaysAuthorization() {}
 
+    // 가상 주행은 실제 권한과 무관하므로 항상 허용으로 보고한다
+    func authorizationStatus() -> LocationAuthorizationStatus { .always }
+
+    func authorizationStream() -> AsyncStream<LocationAuthorizationStatus> {
+        AsyncStream { continuation in
+            continuation.yield(.always)
+        }
+    }
+
     func start() {
         // 실제 구현과 동일한 시맨틱: 재시작 시마다 스트림 재생성 (이전 소비자 finish)
         let (locStream, locCont) = AsyncStream.makeStream(of: Location.self)

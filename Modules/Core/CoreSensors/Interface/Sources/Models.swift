@@ -83,3 +83,11 @@ public struct Motion: Codable {
         self.quaternionZ = quaternionZ
     }
 }
+
+public enum LocationAuthorizationStatus: Sendable, Equatable {
+    case notDetermined
+    /// CLAuthorizationStatus의 denied/restricted 통합 — 안내·차단 처리가 동일하다
+    case denied
+    case whenInUse
+    case always
+}

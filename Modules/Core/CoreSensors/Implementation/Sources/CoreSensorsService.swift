@@ -21,6 +21,10 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     private var motionContinuation: AsyncStream<Motion>.Continuation?
     private var locationStreamValue: AsyncStream<Location>
     private var motionStreamValue: AsyncStream<Motion>
+
+    // 구독 시마다 새로 발급한다 — AsyncStream은 소비자가 하나뿐이라 같은 스트림을 재사용하면
+    // 두 번째 구독자가 이미 끝난 스트림을 받아 권한 변화를 놓친다
+    private var authorizationContinuation: AsyncStream<LocationAuthorizationStatus>.Continuation?
     
     override init() {
         // 초기 스트림 생성
@@ -31,7 +35,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         let (motStream, motCont) = AsyncStream.makeStream(of: Motion.self)
         motionStreamValue = motStream
         motionContinuation = motCont
-        
+
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBestForNavigation
@@ -53,6 +57,28 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     
     func requestAlwaysAuthorization() {
         locationManager.requestAlwaysAuthorization()
+    }
+
+    func authorizationStatus() -> LocationAuthorizationStatus {
+        Self.map(locationManager.authorizationStatus)
+    }
+
+    func authorizationStream() -> AsyncStream<LocationAuthorizationStatus> {
+        let (stream, continuation) = AsyncStream.makeStream(of: LocationAuthorizationStatus.self)
+        authorizationContinuation?.finish()
+        authorizationContinuation = continuation
+        continuation.yield(authorizationStatus())
+        return stream
+    }
+
+    private static func map(_ status: CLAuthorizationStatus) -> LocationAuthorizationStatus {
+        switch status {
+        case .notDetermined: .notDetermined
+        case .denied, .restricted: .denied
+        case .authorizedWhenInUse: .whenInUse
+        case .authorizedAlways: .always
+        @unknown default: .denied
+        }
     }
     
     func start() {
@@ -144,6 +170,10 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
         }
     }
     
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        authorizationContinuation?.yield(Self.map(manager.authorizationStatus))
+    }
+
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
         let speedMetersPerSecond = max(location.speed, 0)

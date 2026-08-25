@@ -13,4 +13,5 @@ public enum TourIntent {
     case stopTracking
     /// 앱 재실행 시 백그라운드 종료로 끊긴 세션 복구
     case restoreTracking
+    case observeAuthorization
 }

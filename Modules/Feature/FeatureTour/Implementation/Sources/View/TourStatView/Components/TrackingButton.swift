@@ -10,7 +10,16 @@ import FeatureTourInterface
 
 struct TrackingButton: View {
     let status: TrackingStatus
+    var isEnabled: Bool = true
     var action: () -> Void = {}
+
+    private var disabledGradient: LinearGradient {
+        LinearGradient(
+            colors: [TourDesign.gaugeTrack, TourDesign.gaugeTrack.opacity(0.85)],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
     
     private var config: ButtonConfig {
         switch status {
@@ -61,23 +70,24 @@ struct TrackingButton: View {
             HStack(spacing: 12) {
                 Image(systemName: config.icon)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                
+                    .foregroundStyle(isEnabled ? .white : TourDesign.textSecondary)
+
                 Text(config.title)
                     .font(.system(size: 16, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(isEnabled ? .white : TourDesign.textSecondary)
                     .tracking(1.2)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(config.gradient)
+            .background(isEnabled ? config.gradient : disabledGradient)
             .clipShape(RoundedRectangle(cornerRadius: TourDesign.buttonCornerRadius))
             .shadow(
-                color: TourDesign.primaryBlue.opacity(0.35),
+                color: isEnabled ? TourDesign.primaryBlue.opacity(0.35) : .clear,
                 radius: 12, y: 6
             )
         }
         .buttonStyle(.plain)
+        .disabled(!isEnabled)
     }
 }
 
