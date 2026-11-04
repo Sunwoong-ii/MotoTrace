@@ -19,7 +19,7 @@
 - [x] Codex 위임 워크플로 도입 — 빌드+테스트 검증과 PR 전 리뷰를 Codex(openai-codex 플러그인)로 위임해 Claude 토큰 사용량 절감. mock ride는 Codex 샌드박스의 CoreSimulatorService 차단으로 위임 불가 확인, Claude 직접 실행 유지. 커밋 게이트는 빌드 직접 실행 대신 검증 스탬프(`scripts/verify-stamp.sh`) 검사로 전환, git·PR은 Claude 유지. Codex 지침은 AGENTS.md
 - [ ] mock ride 검증의 스크린샷 비용 절감 — 속도·린앵글·이벤트 배지 등 수치 검증은 `mockride.sh ui`(접근성 트리 텍스트)로 확인하고, 스크린샷은 화면 확인용 1장으로 축소. CLAUDE.md mock ride 규칙에 원칙 한 줄 추가
 - [ ] Codex mock ride 위임 재검토 — 셸 제어는 샌드박스에 막히지만 XcodeBuildMCP MCP 도구는 동작하므로, ui-automation 워크플로를 MCP에 활성화하고 mockride.sh 흐름을 MCP 도구 호출로 포팅하면 가능할 수 있음. 복잡도 대비 절감 효과(스크린샷 1~2장 수준) 작아 보류
-- [ ] 커밋 게이트 훅이 워크트리를 오검사 — 훅(`.claude/hooks/require-build-test.sh`)은 세션 cwd 기준으로 스탬프를 검사하는데, `cd <워크트리> && git commit` 복합 명령은 세션 cwd를 바꾸지 않아 **메인 워크트리를 검사**한다. 메인에 미검증 Swift 변경이 있으면 검증 완료된 fix 커밋이 차단됨(실측, standalone `cd` 선행으로 우회). 개선안: 훅이 명령의 선행 `cd` 대상을 파싱하거나 대상 파일의 git 최상위를 기준으로 검사
+- [x] (해당 없음: ios-ai-harness 도입으로 커밋 게이트 훅 제거) 커밋 게이트 훅이 워크트리를 오검사 — 훅(`.claude/hooks/require-build-test.sh`)은 세션 cwd 기준으로 스탬프를 검사하는데, `cd <워크트리> && git commit` 복합 명령은 세션 cwd를 바꾸지 않아 **메인 워크트리를 검사**한다. 메인에 미검증 Swift 변경이 있으면 검증 완료된 fix 커밋이 차단됨(실측, standalone `cd` 선행으로 우회). 개선안: 훅이 명령의 선행 `cd` 대상을 파싱하거나 대상 파일의 git 최상위를 기준으로 검사
 - [ ] Codex 자동 review gate(Stop 훅) 활성화 재검토 — 현재 토큰 절약을 위해 비활성. Codex 위임 운영 경험이 쌓이면 `/codex:setup`으로 활성화 여부 재판단
 
 ## 발견된 이슈 (조사 필요)

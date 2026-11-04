@@ -290,14 +290,17 @@ Xcode에서 직접 실행할 경우 Scheme의 Arguments에 `-UseMockSensors`를 
 
 ## AI Workflow
 
-개발에 두 AI 에이전트를 역할 분담해 사용합니다.
+AI 코딩 에이전트는 ios-ai-harness 하네스를 기준으로 작업합니다.
 
-| 담당 | 역할 | 지침 문서 |
-|---|---|---|
-| Claude Code | 소스 작성, git(commit/push/PR), mock ride 검증, 작업 조율 | `CLAUDE.md` |
-| Codex | 빌드+테스트 검증, PR 전 코드 리뷰 | `AGENTS.md` |
+| 구성 | 위치 |
+|---|---|
+| 에이전트 지침 | `AGENTS.md` (Claude Code는 `CLAUDE.md`가 import) |
+| 상황별 규칙 | `.claude/rules/harness/`(하네스 관리), `.claude/rules/project/`(MotoTrace 고유) |
+| 빌드·테스트 | `scripts/harness/build` · `test` · `verify` (프로젝트 설정: `.harness/project.json`) |
+| 생성 파일 편집 차단 훅, 리뷰 서브에이전트 `ios-reviewer` | 하네스 플러그인 `ios-harness` |
+| 시뮬레이터 가상 주행 검증 | `scripts/mockride.sh`, `mock-ride` 스킬 |
 
-커밋 게이트: Codex 검증 성공 시 `scripts/verify-stamp.sh`가 작업 트리 지문을 기록하고, `git commit` 훅이 지문 일치를 확인해 미검증 커밋을 차단합니다.
+PR 전에는 `scripts/harness/verify --base main`, `ios-reviewer` 리뷰, `/codex:review`를 거칩니다.
 
 병렬 세션은 용도별 git worktree 슬롯(`MotoTrace/`=main, `MotoTrace-feature/`, `MotoTrace-fix/`, `MotoTrace-ai-workflow/`)으로 분리해, 미커밋 변경이 브랜치 전환에 딸려가는 사고를 방지합니다.
 
