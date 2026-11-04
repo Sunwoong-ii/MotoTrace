@@ -17,7 +17,7 @@ scripts/mockride.sh shot [라벨]       # 스크린샷 → .mcp-artifacts/<세�
 scripts/mockride.sh ui               # 화면 요소 ref 목록 (디버깅용)
 ```
 
-빌드가 필요하면 먼저: `xcodebuild -workspace MotoTrace.xcworkspace -scheme MotoTrace -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build`
+빌드가 필요하면 먼저 `scripts/harness/build`를 실행한다. `run`은 이 빌드 결과(워크트리 전용 DerivedData)를 설치한다.
 
 스크린샷은 Read 도구로 열어 확인한다. 산출물은 `.mcp-artifacts/`(gitignore 대상)에 세션 단위로 쌓인다.
 

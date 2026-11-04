@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "generator": "tuist",
+  "commands": {
+    "install": "tuist install",
+    "generate": "make generate"
+  },
+  "workspace": "MotoTrace.xcworkspace",
+  "project": null,
+  "app": {
+    "scheme": "MotoTrace",
+    "path": "MotoTrace",
+    "bundleId": "com.woong.MotoTrace",
+    "unitTestTargets": [
+      "MotoTraceTests"
+    ]
+  },
+  "destination": {
+    "simulator": "iPhone 17 Pro",
+    "os": "latest"
+  },
+  "modules": {
+    "manifest": "Project.swift",
+    "scheme": "{dir}",
+    "testsDir": "Tests"
+  }
+}

@@ -86,10 +86,16 @@ cmd_run() {
     fi
     open -a Simulator
 
-    local app
-    app=$(find "$HOME/Library/Developer/Xcode/DerivedData" -path "*MotoTrace-*/Build/Products/Debug-iphonesimulator/MotoTrace.app" -maxdepth 6 2>/dev/null | head -1)
-    if [[ -z "$app" ]]; then
-        echo "❌ 빌드된 앱을 찾지 못했습니다. 먼저 MotoTrace 스킴을 빌드하세요." >&2
+    # scripts/harness/build가 쓰는 이 워크트리 전용 DerivedData를 먼저 본다.
+    # 없으면 예전처럼 Xcode DerivedData에서 찾는다(다른 워크트리의 빌드일 수 있음).
+    local dd app
+    dd=$(bash -c '. "$1/scripts/harness/lib.sh" && harness_derived_data_path "$1"' _ "$ROOT" 2>/dev/null || true)
+    app="$dd/Build/Products/Debug-iphonesimulator/MotoTrace.app"
+    if [[ -z "$dd" || ! -d "$app" ]]; then
+        app=$(find "$HOME/Library/Developer/Xcode/DerivedData" -path "*MotoTrace-*/Build/Products/Debug-iphonesimulator/MotoTrace.app" -maxdepth 6 2>/dev/null | head -1)
+    fi
+    if [[ -z "$app" || ! -d "$app" ]]; then
+        echo "❌ 빌드된 앱을 찾지 못했습니다. 먼저 scripts/harness/build로 앱을 빌드하세요." >&2
         exit 1
     fi
 
