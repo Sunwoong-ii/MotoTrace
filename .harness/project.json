@@ -16,7 +16,7 @@
     ]
   },
   "destination": {
-    "simulator": "iPhone 17 Pro",
+    "simulator": "iPhone 18 Pro",
     "os": "latest"
   },
   "modules": {
