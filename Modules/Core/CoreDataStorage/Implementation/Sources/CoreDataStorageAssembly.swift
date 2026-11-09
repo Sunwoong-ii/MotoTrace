@@ -19,5 +19,8 @@ public enum CoreDataStorageAssembly: DIAssembly {
         container.register(TrackingSessionRepositoryInterface.self, scope: .singleton) {
             TrackingSessionRepository()
         }
+        container.register(TrackingThresholdsRepositoryInterface.self, scope: .singleton) {
+            TrackingThresholdsRepository()
+        }
     }
 }
