@@ -17,6 +17,7 @@ public enum TourAssembler: @preconcurrency TourFeatureAssembling {
         )
         let repository = container.resolve(TourRepositoryInterface.self)
         let sessionStore = container.resolve(TrackingSessionRepositoryInterface.self)
+        let thresholdsStore = container.resolve(TrackingThresholdsRepositoryInterface.self)
         // 화면 잠금 방지 등 주행 세션 라이프사이클에 묶인 기기 런타임 — 피처 로컬이라 직접 생성
         let rideSessionRuntime = SystemRideSessionRuntime()
         let store = TourStore(
@@ -24,6 +25,7 @@ public enum TourAssembler: @preconcurrency TourFeatureAssembling {
             analyzer: analyzer,
             repository: repository,
             sessionStore: sessionStore,
+            thresholdsStore: thresholdsStore,
             rideSessionRuntime: rideSessionRuntime,
             initialState: initialState
         )

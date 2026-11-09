@@ -19,6 +19,7 @@ final class TourStore: ObservableObject {
     private let analyzer: TrackingAnalyzerInterface
     private let repository: TourRepositoryInterface
     private let sessionStore: TrackingSessionRepositoryInterface
+    private let thresholdsStore: TrackingThresholdsRepositoryInterface
     private let rideSessionRuntime: RideSessionRuntime
     private var locationTask: Task<Void, Never>?
     private var motionTask: Task<Void, Never>?
@@ -34,6 +35,7 @@ final class TourStore: ObservableObject {
         analyzer: TrackingAnalyzerInterface,
         repository: TourRepositoryInterface,
         sessionStore: TrackingSessionRepositoryInterface,
+        thresholdsStore: TrackingThresholdsRepositoryInterface,
         rideSessionRuntime: RideSessionRuntime,
         initialState: TourState = TourState()
     ) {
@@ -41,6 +43,7 @@ final class TourStore: ObservableObject {
         self.analyzer = analyzer
         self.repository = repository
         self.sessionStore = sessionStore
+        self.thresholdsStore = thresholdsStore
         self.rideSessionRuntime = rideSessionRuntime
         self.state = initialState
     }
@@ -112,6 +115,9 @@ final class TourStore: ObservableObject {
             try? await repository.createTour(tourDTO)
         }
         
+        // 설정에서 바꾼 임계값을 주행 시작 시점에 읽는다 — analyzer는 조립 시 한 번만 생성돼
+        // 생성 시점 주입으로는 앱을 다시 켤 때까지 반영되지 않는다
+        analyzer.setThresholds(thresholdsStore.load())
         analyzer.reset()
         // UI 상태 초기화 — 이전 세션 값이 잔류하지 않도록
         state.liveStats = LiveStats()
@@ -266,6 +272,7 @@ final class TourStore: ObservableObject {
         // (안 하면 updateStats()가 0부터 센 값으로 DB를 덮어씀)
         // movingTime은 DB에 없으므로 avgSpeed 역산으로 복원 (stats() 계산의 역함수)
         let movingTimeSeconds = tour.avgSpeed > 0 ? tour.distance / tour.avgSpeed * 3600 : 0
+        analyzer.setThresholds(thresholdsStore.load())
         analyzer.restoreStats(
             movingTimeSeconds: movingTimeSeconds,
             movingDistanceKm: tour.distance,
