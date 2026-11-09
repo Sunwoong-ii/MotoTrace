@@ -12,6 +12,7 @@ import FeatureTour
 import FeatureTourInterface
 import FeatureHistory
 import FeatureHistoryInterface
+import FeatureSettings
 
 struct RootTabView: View {
     let container: AppDIContainer
@@ -27,6 +28,10 @@ struct RootTabView: View {
             
             Tab("History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90") {
                 HistoryAssembler.assemble(container: container)
+            }
+
+            Tab("Settings", systemImage: "gearshape") {
+                SettingsAssembler.assemble(container: container)
             }
         }
         .tint(.blue)

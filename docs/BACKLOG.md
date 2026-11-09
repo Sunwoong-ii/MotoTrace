@@ -24,13 +24,14 @@
 
 ## 발견된 이슈 (조사 필요)
 
+- [ ] 탭바가 스크롤 콘텐츠의 마지막 행을 가림 — History 목록과 Settings Form 모두 마지막 항목이 하단 탭바에 걸친다(스크롤하면 볼 수는 있다). 화면별로 여백을 더하는 대신 공통 처리(`contentMargins` 등)로 한 번에 잡는 게 맞다. 설정 화면 작업 중 발견
 - [ ] AppDIContainer 싱글턴 resolve가 스레드 안전하지 않음 — 캐시 확인과 factory 실행 사이 락이 없어 동시 resolve 시 인스턴스가 중복 생성될 수 있음. 현재는 모든 resolve가 메인 스레드라 실해는 없지만, 백그라운드 resolve가 생기면 문제 (계측 로거 코드리뷰에서 발견)
 - [ ] FeatureHistory Demo 타겟 빌드 깨짐 — `FeatureHistoryDemoView.swift`가 존재하지 않는 `HistoryFeatureBuilder.build()`를 참조(실제 어셈블러는 `HistoryAssembler`). FeatureHistory 스킴 테스트 실행이 막힌다(단 실제 테스트 함수는 0개, 앱 빌드로 Impl 컴파일은 검증됨). Demo를 `HistoryAssembler` 기반으로 수정 필요 (History 셀 재구성 작업 중 발견)
 
 - [x] 세션 복구 시 analyzer가 새 인스턴스라 이전 주행 거리/통계가 0부터 시작 → `restoreStats` 시딩 API로 해결 (#7). fetchTour id 무시 버그도 함께 수정
 - [x] Tuist manifest에 FeatureTour → CoreDataStorageInterface 의존성 누락 → implementationDependencies 선언으로 해결 (#7)
 - [x] `updateStats()`가 매초 repository에 쓰기 — 오탐 판정: 스로틀이 repository 내부에 있어 README("30회마다 저장")와 실질 일치. 진짜 문제였던 finishTour 최종 저장이 스로틀에 막히는 버그를 수정 (#7)
-- [ ] FeatureSettings 개발 — TrackingPolicy 임계값(급가속/뱅킹각/정차 기준)을 설정 화면과 연결
+- [x] FeatureSettings 개발 — 설정 화면에서 주행 임계값(급가감속·뱅킹각·정차)을 슬라이더로 조정. UserDefaults 저장(`TrackingThresholdsRepository`) 후 주행 시작 시 `analyzer.setThresholds()`로 반영돼 다음 주행부터 적용된다. 위치 권한 상태·설정 앱 바로가기, 앱 버전도 함께 표시
 - [ ] 오일러 폴백 → 중력 투영 전환 시 표시값 불연속 — 린앵글은 course 최초 확보 순간 계산 방식이 바뀌며 한 번 점프. 경사각은 #11 이후 **2단계로 점프**한다: 폴백(오일러 델타) → course 확보 시 `0`(차체축 미캡처 구간) → 주행 속도(`stopSpeedKmh`) 도달로 차체축 캡처 후 실측값. 둘 다 주행 시작 직후에만 발생해 영향은 낮음, 필요 시 스무딩 검토
 - [ ] mockride.sh가 tap 성공에도 조용히 중단됨 — `set -euo pipefail`인데 `tap_element`가 XcodeBuildMCP CLI 종료코드를 방어하지 않는다(`scripts/mockride.sh:73`). CLI는 탭이 **성공해도** "refreshed runtime snapshot did not settle" 경고와 함께 non-zero를 반환하므로, `start`가 START RECORDING만 누르고 이름 alert의 "시작" 탭 전에 죽는다(2회 재현). 개선안: tap 호출 종료코드 허용(`|| true`) 또는 경고/실패 종료코드 구분. 아래 스테일 앱 항목과는 별개 원인
 - [ ] mockride.sh가 스테일 앱을 설치할 수 있음 — `run`이 `~/Library/Developer/Xcode/DerivedData`를 `find | head -1`로 잡는데 ① XcodeBuildMCP 빌드 산출물은 자체 워크스페이스 경로(`~/Library/Developer/XcodeBuildMCP/workspaces/`)에 생겨 탐색 대상 밖 ② 워크트리별 DerivedData가 여럿일 때 head -1이 mtime 무관 임의 선택. 경사각 수정 검증 중 수정 전 앱이 설치돼 검증이 무효화될 뻔함(실측). 개선안: mtime 최신 선택 + XcodeBuildMCP 경로 포함, 또는 앱 경로 인자 지원
