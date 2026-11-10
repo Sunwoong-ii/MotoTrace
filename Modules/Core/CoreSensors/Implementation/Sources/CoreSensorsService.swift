@@ -22,9 +22,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     private var locationStreamValue: AsyncStream<Location>
     private var motionStreamValue: AsyncStream<Motion>
 
-    // 구독 시마다 새로 발급한다 — AsyncStream은 소비자가 하나뿐이라 같은 스트림을 재사용하면
-    // 두 번째 구독자가 이미 끝난 스트림을 받아 권한 변화를 놓친다
-    private var authorizationContinuation: AsyncStream<LocationAuthorizationStatus>.Continuation?
+    private let authorizationBroadcaster = AuthorizationBroadcaster()
     
     override init() {
         // 초기 스트림 생성
@@ -64,11 +62,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     }
 
     func authorizationStream() -> AsyncStream<LocationAuthorizationStatus> {
-        let (stream, continuation) = AsyncStream.makeStream(of: LocationAuthorizationStatus.self)
-        authorizationContinuation?.finish()
-        authorizationContinuation = continuation
-        continuation.yield(authorizationStatus())
-        return stream
+        authorizationBroadcaster.subscribe(current: authorizationStatus())
     }
 
     private static func map(_ status: CLAuthorizationStatus) -> LocationAuthorizationStatus {
@@ -171,7 +165,7 @@ internal final class CoreSensorsService: NSObject, CoreSensorsInterface, CLLocat
     }
     
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        authorizationContinuation?.yield(Self.map(manager.authorizationStatus))
+        authorizationBroadcaster.send(Self.map(manager.authorizationStatus))
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {

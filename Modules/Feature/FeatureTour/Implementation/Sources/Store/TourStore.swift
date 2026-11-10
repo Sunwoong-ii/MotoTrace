@@ -84,6 +84,8 @@ final class TourStore: ObservableObject {
                 self.state.locationAuthorization = status
                 self.handleAuthorizationChange(status)
             }
+            // 스트림이 끝나면 비워 둬야 다시 구독할 수 있다
+            self?.authorizationTask = nil
         }
     }
 
