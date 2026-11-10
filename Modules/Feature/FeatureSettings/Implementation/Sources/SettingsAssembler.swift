@@ -5,7 +5,7 @@ import CoreSensorsInterface
 import CoreDataStorageInterface
 
 /// 설정 Feature Assembler
-public enum SettingsAssembler: @preconcurrency SettingsAssembling {
+public enum SettingsAssembler: SettingsAssembling {
 
     @MainActor
     public static func assemble(container: AppDIContainer) -> AnyView {

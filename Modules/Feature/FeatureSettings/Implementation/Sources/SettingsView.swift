@@ -39,6 +39,7 @@ private extension SettingsView {
     var thresholdSection: some View {
         Section {
             thresholdSlider(
+                identifier: "accelerationThresholdSlider",
                 title: "급가감속 기준",
                 value: store.state.thresholds.accelerationKmhPerSec,
                 range: 5...30,
@@ -48,6 +49,7 @@ private extension SettingsView {
             )
 
             thresholdSlider(
+                identifier: "leanAngleThresholdSlider",
                 title: "뱅킹각 기준",
                 value: store.state.thresholds.minLeanAngleDegrees,
                 range: 10...55,
@@ -57,9 +59,11 @@ private extension SettingsView {
             )
 
             thresholdSlider(
+                identifier: "stopSpeedThresholdSlider",
                 title: "정차 판단 속도",
                 value: store.state.thresholds.stopSpeedKmh,
-                range: 0...10,
+                // 0이면 정차 감지가 꺼져 주차 중에도 시간·거리가 쌓이고 린앵글 이벤트가 잡힌다
+                range: 1...10,
                 step: 0.5,
                 format: { String(format: "%.1f km/h", $0) },
                 onChange: { store.send(.changeStopSpeedThreshold($0)) }
@@ -69,6 +73,7 @@ private extension SettingsView {
                 store.send(.resetToDefaults)
             }
             .disabled(!store.state.isCustomized)
+            .accessibilityIdentifier("resetThresholdsButton")
         } header: {
             Text("주행 감지 기준")
         } footer: {
@@ -77,6 +82,7 @@ private extension SettingsView {
     }
 
     func thresholdSlider(
+        identifier: String,
         title: String,
         value: Double,
         range: ClosedRange<Double>,
@@ -102,6 +108,7 @@ private extension SettingsView {
                     if !editing { store.send(.commitChanges) }
                 }
             )
+            .accessibilityIdentifier(identifier)
             .accessibilityLabel(title)
             .accessibilityValue(format(value))
         }
@@ -115,7 +122,7 @@ private extension SettingsView {
     var permissionSection: some View {
         Section("위치 권한") {
             HStack {
-                Text(authorizationTitle)
+                Text("현재 상태")
                 Spacer()
                 Text(authorizationDescription)
                     .foregroundStyle(authorizationTint)
@@ -125,11 +132,10 @@ private extension SettingsView {
                 Button("설정 앱에서 변경") {
                     openSettings()
                 }
+                .accessibilityIdentifier("openLocationSettingsButton")
             }
         }
     }
-
-    var authorizationTitle: String { "현재 상태" }
 
     var authorizationDescription: String {
         switch store.state.locationAuthorization {

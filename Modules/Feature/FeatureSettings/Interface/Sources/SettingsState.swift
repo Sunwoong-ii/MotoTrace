@@ -18,12 +18,14 @@ public struct SettingsState {
         self.appVersion = appVersion
     }
 
-    /// 조정값이 기본값과 다른지 — "기본값으로" 버튼 활성 여부
+    /// 조정값이 기본값과 다른지 — "기본값으로" 버튼 활성 여부.
+    /// 슬라이더가 step 배수로 스냅하면서 기본값과 비트 단위로 달라질 수 있어 허용오차로 비교한다
     public var isCustomized: Bool {
         let base = TrackingPolicy.defaultThresholds
-        return thresholds.accelerationKmhPerSec != base.accelerationKmhPerSec
-            || thresholds.decelerationKmhPerSec != base.decelerationKmhPerSec
-            || thresholds.minLeanAngleDegrees != base.minLeanAngleDegrees
-            || thresholds.stopSpeedKmh != base.stopSpeedKmh
+        func differs(_ lhs: Double, _ rhs: Double) -> Bool { abs(lhs - rhs) >= 0.001 }
+        return differs(thresholds.accelerationKmhPerSec, base.accelerationKmhPerSec)
+            || differs(thresholds.decelerationKmhPerSec, base.decelerationKmhPerSec)
+            || differs(thresholds.minLeanAngleDegrees, base.minLeanAngleDegrees)
+            || differs(thresholds.stopSpeedKmh, base.stopSpeedKmh)
     }
 }
